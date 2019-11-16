@@ -720,6 +720,21 @@
       <pose frame=''>0 0 0 0 -0 0</pose>
       <static>1</static>
       <link name='link4'>
+        <collision name='collision4'>
+          <geometry>
+            <polyline>
+              <point>0 -1.96</point>
+              <point>11.775 -1.96</point>
+              <point>11.775 1.96</point>
+              <point>0 1.96</point>
+              <point>0 50</point>
+              <point>50 50</point>
+              <point>50 -50</point>
+              <point>0 -50</point>
+              <height>0.05</height>
+            </polyline>
+          </geometry>
+        </collision>
         <visual name='visual4'>
           <geometry>
             <polyline>
@@ -750,6 +765,21 @@
       <pose frame=''>0 0 0 0 -0 0</pose>
       <static>1</static>
       <link name='link5'>
+        <collision name='collision5'>
+          <geometry>
+            <polyline>
+              <point>0 -1.96</point>
+              <point>-11.775 -1.96</point>
+              <point>-11.775 1.96</point>
+              <point>0 1.96</point>
+              <point>0 50</point>
+              <point>-50 50</point>
+              <point>-50 -50</point>
+              <point>0 -50</point>
+              <height>0.05</height>
+            </polyline>
+          </geometry>
+        </collision>
         <visual name='visual5'>
           <geometry>
             <polyline>
@@ -781,6 +811,27 @@
       <pose frame=''>0 0 0 0 -0 0</pose>
       <static>1</static>
       <link name='link6'>
+        <collision name='collision6'>
+          <geometry>
+            <polyline>
+              <point>-9.75 0.14</point>
+              <point>9.75 0.14</point>
+              <point>9.82 0.1212</point>
+              <point>9.8712 0.07</point>
+              <point>9.89 0</point>
+              <point>9.8712 -0.07</point>
+              <point>9.82 -0.1212</point>
+              <point>9.75 -0.14</point>
+              <point>-9.75 -0.14</point>
+              <point>-9.82 -0.1212</point>
+              <point>-9.8712 -0.07</point>
+              <point>-9.89 0</point>
+              <point>-9.8712 0.07</point>
+              <point>-9.82 0.1212</point>
+              <height>0.2</height>
+            </polyline>
+          </geometry>
+        </collision>
         <visual name='visual6'>
           <geometry>
             <polyline>

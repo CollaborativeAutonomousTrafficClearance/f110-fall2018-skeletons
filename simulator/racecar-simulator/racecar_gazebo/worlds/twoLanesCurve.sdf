@@ -641,16 +641,31 @@
       <pose frame=''>0 0 0 0 -0 0</pose>
       <static>1</static>
       <link name='link4'>
+        <collision name='collision'>
+          <geometry>
+            <polyline>
+              <point>0 -2.0475</point>
+              <point>-11.775 -2.0475</point>
+              <point>-11.775 2.0475</point>
+              <point>0 2.0475</point>
+              <point>0 50</point>
+              <point>-50 50</point>
+              <point>-50 -50</point>
+              <point>0 -50</point>
+              <height>0.05</height>
+            </polyline>
+          </geometry>
+        </collision>
         <visual name='visual4'>
           <geometry>
             <polyline>
               <point>0 -2.0475</point>
-              <point>11.775 -2.0475</point>
-              <point>11.775 2.0475</point>
+              <point>-11.775 -2.0475</point>
+              <point>-11.775 2.0475</point>
               <point>0 2.0475</point>
               <point>0 50</point>
-              <point>50 50</point>
-              <point>50 -50</point>
+              <point>-50 50</point>
+              <point>-50 -50</point>
               <point>0 -50</point>
               <height>0.05</height>
             </polyline>
@@ -671,6 +686,21 @@
       <pose frame=''>0 0 0 0 -0 0</pose>
       <static>1</static>
       <link name='link5'>
+        <collision name='collision'>
+          <geometry>
+            <polyline>
+              <point>0 -2.0475</point>
+              <point>-11.775 -2.0475</point>
+              <point>-11.775 2.0475</point>
+              <point>0 2.0475</point>
+              <point>0 50</point>
+              <point>-50 50</point>
+              <point>-50 -50</point>
+              <point>0 -50</point>
+              <height>0.05</height>
+            </polyline>
+          </geometry>
+        </collision>
         <visual name='visual5'>
           <geometry>
             <polyline>
@@ -702,6 +732,27 @@
       <pose frame=''>0 0 0 0 -0 0</pose>
       <static>1</static>
       <link name='link6'>
+        <collision name='collision'>
+          <geometry>
+            <polyline>
+              <point>-9.75 0.5275</point>
+              <point>9.75 0.5275</point>
+              <point>10.0175 0.4568</point>
+              <point>10.2068 0.2675</point>
+              <point>10.2775 0</point>
+              <point>10.2068 -0.2675</point>
+              <point>10.0175 -0.4568</point>
+              <point>9.75 -0.5275</point>
+              <point>-9.75 -0.5275</point>
+              <point>-10.0175 -0.4568</point>
+              <point>-10.2068 -0.2675</point>
+              <point>-10.2775 0</point>
+              <point>-10.2068 0.2675</point>
+              <point>-10.0175 0.4568</point>
+              <height>0.25</height>
+            </polyline>
+          </geometry>
+        </collision>
         <visual name='visual6'>
           <geometry>
             <polyline>
@@ -719,7 +770,7 @@
               <point>-10.2775 0</point>
               <point>-10.2068 0.2675</point>
               <point>-10.0175 0.4568</point>
-              <height>0.5</height>
+              <height>0.25</height>
             </polyline>
           </geometry>
           <material>
