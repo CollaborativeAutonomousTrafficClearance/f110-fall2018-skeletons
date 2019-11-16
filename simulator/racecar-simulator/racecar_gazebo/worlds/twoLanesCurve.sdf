@@ -719,7 +719,7 @@
               <point>-10.2775 0</point>
               <point>-10.2068 0.2675</point>
               <point>-10.0175 0.4568</point>
-              <height>0.05</height>
+              <height>0.5</height>
             </polyline>
           </geometry>
           <material>
