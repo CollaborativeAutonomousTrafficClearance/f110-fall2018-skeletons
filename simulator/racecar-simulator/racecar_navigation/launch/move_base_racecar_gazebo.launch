@@ -7,7 +7,7 @@
     </include>
 
     <node name="$(anon rviz)" pkg="rviz" type="rviz"
-          args="-d $(find racecar_rviz)/rviz/rviz_map_tes1.rviz" output="screen"/>
+          args="-d $(find racecar_rviz)/rviz/navigation.rviz" output="screen"/>
 
 
 </launch>
