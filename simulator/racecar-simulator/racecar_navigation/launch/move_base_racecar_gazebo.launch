@@ -7,8 +7,8 @@
         <arg name="is_simulation" value="true"/>
     </include>
 
-    <!--<node name="$(anon rviz)" pkg="rviz" type="rviz"
-          args="-d $(find racecar_navigation)/rviz/test_move_base.rviz" output="screen"/>-->
+    <node name="$(anon rviz)" pkg="rviz" type="rviz"
+          args="-d $(find racecar_rviz)/rviz/rviz_map_tes1.rviz" output="screen"/>
 
 
 </launch>
