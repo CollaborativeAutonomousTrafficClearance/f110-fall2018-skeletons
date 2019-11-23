@@ -9,6 +9,10 @@ project(racecar_navigation)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   move_base
+  nav_msgs
+  sensor_msgs
+  tf
+  tf2_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -68,7 +72,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
+#   nav_msgs#   sensor_msgs
 # )
 
 ################################################
@@ -103,7 +107,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES racecar_navigation
-#  CATKIN_DEPENDS move_base
+#  CATKIN_DEPENDS move_base nav_msgs sensor_msgs tf tf2_ros
 #  DEPENDS system_lib
 )
 

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="map_file" default="$(find racecar_mapping)/maps/threeLanesCurve.yaml"/>
+    <include file="$(find racecar_localization)/launch/map_server.launch">
+        <arg name="map_file" value="$(arg map_file)"/>
+    </include>
+
+    <!-- Front steering: locate base_link at the center of the rear-axle -->
+    <!-- For the cost planner -->
+    <!-- See this https://answers.ros.org/question/237035/steering-axis-of-carlike-robot-with-teb_local_planner/ -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_to_rear_axle"
+        args="-0.155 0.0 0.0 0.0 0.0 0.0 1.0 /base_link /rear_axle" />
+
+    <!-- no need for localization when running simulation -->
+    <arg name="is_simulation" default="false"/>
+    <include unless="$(arg is_simulation)" file="$(find racecar_localization)/launch/amcl.launch" />
+
+    <!--launch the move_base node-->
+    <node pkg="move_base" type="move_base" respawn="false" name="move_base" output="screen">
+        <rosparam file="$(find racecar_navigation)/params/costmap_common_params.yaml" command="load" ns="global_costmap"/>
+        <rosparam file="$(find racecar_navigation)/params/costmap_common_params.yaml" command="load" ns="local_costmap"/>
+        <rosparam file="$(find racecar_navigation)/params/local_costmap_params.yaml" command="load"/>
+        <rosparam file="$(find racecar_navigation)/params/global_costmap_params.yaml" command="load"/>
+        <rosparam file="$(find racecar_navigation)/params/teb_planner_params.yaml" command="load"/>
+    </node>
+
+    <remap from="high_level/ackermann_cmd_mux/input/nav_0" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+    <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower" output="screen"/>
+
+</launch>
