@@ -1,7 +1,0 @@
-<launch>
-    <!-- Map server -->
-    <!--This launch file publishes map data to /map topic-->
-    <arg name="map_file" default="$(find racecar_mapping)/maps/threeLanesCurve.yaml"/>
-    <node name="map_server" pkg="map_server" type="map_server"
-          args="$(arg map_file)" output="screen"/>
-</launch>
