@@ -4,7 +4,7 @@
 
   <include file="$(find racecar_gazebo)/launch/racecar_threeLanesCurve.launch"/>
 
-  <include file="$(find husky_navigation)/launch/gmapping.launch"/>
+  <include file="$(find racecar_mapping)/launch/gmapping.launch"/>
   
 
   <!--<node name="rviz" pkg="rviz" type="rviz" args="-d $(find rviz)/rviz/navigation.rviz"/> -->
