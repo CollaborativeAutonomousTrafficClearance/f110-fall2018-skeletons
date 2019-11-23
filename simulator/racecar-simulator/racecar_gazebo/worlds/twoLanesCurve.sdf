@@ -645,12 +645,12 @@
           <geometry>
             <polyline>
               <point>0 -2.0475</point>
-              <point>-11.775 -2.0475</point>
-              <point>-11.775 2.0475</point>
+              <point>11.775 -2.0475</point>
+              <point>11.775 2.0475</point>
               <point>0 2.0475</point>
               <point>0 50</point>
-              <point>-50 50</point>
-              <point>-50 -50</point>
+              <point>50 50</point>
+              <point>50 -50</point>
               <point>0 -50</point>
               <height>0.05</height>
             </polyline>
@@ -660,12 +660,12 @@
           <geometry>
             <polyline>
               <point>0 -2.0475</point>
-              <point>-11.775 -2.0475</point>
-              <point>-11.775 2.0475</point>
+              <point>11.775 -2.0475</point>
+              <point>11.775 2.0475</point>
               <point>0 2.0475</point>
               <point>0 50</point>
-              <point>-50 50</point>
-              <point>-50 -50</point>
+              <point>50 50</point>
+              <point>50 -50</point>
               <point>0 -50</point>
               <height>0.05</height>
             </polyline>
