@@ -26,6 +26,6 @@
     </node>
 
     <remap from="/racecar/ackermann_cmd_mux/output" to="/vesc/low_level/ackermann_cmd_mux/output"/>
-    <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower" output="screen"/>
+    <node pkg="racecar_navigation" type="custom_move_base_follower.py" name="move_base_follower" output="screen"/>
 
 </launch>

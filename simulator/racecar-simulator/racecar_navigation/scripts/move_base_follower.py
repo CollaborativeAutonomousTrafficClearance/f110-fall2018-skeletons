@@ -30,3 +30,4 @@ class MoveBaseFollower(AckermannPublisher):
 if __name__ == '__main__':
     MoveBaseFollower("move_base_follower")
     rospy.spin()
+
