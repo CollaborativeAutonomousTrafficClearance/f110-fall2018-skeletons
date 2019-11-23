@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-    <include file="$(find racecar_gazebo)/launch/racecar.launch"/>
+    <include file="$(find racecar_gazebo)/launch/racecar_threeLanesCurve.launch"/>
 
     <include file="$(find racecar_navigation)/launch/move_base_racecar.launch">
         <arg name="map_file" value="$(find racecar_mapping)/maps/threeLanesCurve.yaml"/>

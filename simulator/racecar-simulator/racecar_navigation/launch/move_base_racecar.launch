@@ -25,7 +25,7 @@
         <rosparam file="$(find racecar_navigation)/params/teb_planner_params.yaml" command="load"/>
     </node>
 
-    <remap from="high_level/ackermann_cmd_mux/input/nav_0" to="/vesc/high_level/ackermann_cmd_mux/input/nav_0"/>
+    <remap from="/racecar/ackermann_cmd_mux/output" to="/vesc/low_level/ackermann_cmd_mux/output"/>
     <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower" output="screen"/>
 
 </launch>

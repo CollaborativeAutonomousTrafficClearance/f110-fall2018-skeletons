@@ -9,6 +9,7 @@ This node subscribes to the control commands sent by move_base and publishes
 import rospy
 from geometry_msgs.msg import Twist
 from ackermann_publisher import AckermannPublisher
+from ackermann_msgs.msg import AckermannDriveStamped
 import math
 
 class MoveBaseFollower(AckermannPublisher):
@@ -21,7 +22,9 @@ class MoveBaseFollower(AckermannPublisher):
         speed = math.sqrt(msg.linear.x*msg.linear.x + msg.linear.y*msg.linear.y)
         steering_angle = msg.angular.z
 
-        self.publish_ackermann(steering_angle, speed)
+        #edited, to make the cmd_vel topic publishes to input teleop topic
+        ack_publisher = rospy.Publisher('/vesc/ackermann_cmd_mux/input/teleop', AckermannDriveStamped, queue_size=1)
+        ack_publisher.publish_ackermann(steering_angle, speed)
 
 
 if __name__ == '__main__':
