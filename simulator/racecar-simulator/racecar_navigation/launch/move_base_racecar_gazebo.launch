@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+    <include file="$(find racecar_gazebo)/launch/racecar_threeLanesCurve.launch"/>
+
+    <include file="$(find racecar_navigation)/launch/move_base_racecar.launch">
+        <arg name="map_file" value="$(find racecar_mapping)/maps/threeLanesCurve.yaml"/>
+        <arg name="is_simulation" value="true"/>
+    </include>
+
+    <node name="$(anon rviz)" pkg="rviz" type="rviz"
+          args="-d $(find racecar_rviz)/rviz/rviz_map_tes1.rviz" output="screen"/>
+
+
+</launch>

@@ -20,15 +20,16 @@
     <remap from="/joint_states" to="/racecar/joint_states" />
   </node>
 
+
   <!-- servo node -->
   <node pkg="racecar_control" type="servo_commands.py" name="servo_commands" output="screen">
     <remap from="/racecar/ackermann_cmd_mux/output" to="/vesc/low_level/ackermann_cmd_mux/output"/>
   </node>
 
   <!-- servo node -->
-  <node pkg="racecar_control" type="keyboard_teleop.py" name="keyboard_teleop" output="screen">
+  <!--<node pkg="racecar_control" type="keyboard_teleop.py" name="keyboard_teleop" output="screen">
     <remap from="/racecar/ackermann_cmd_mux/output" to="/vesc/low_level/ackermann_cmd_mux/output"/>
-  </node>
+  </node>-->
 
   <!-- Allow for Gazebo to broadcast odom -->
   <node pkg="racecar_gazebo" name="gazebo_odometry_node" type="gazebo_odometry.py"/>
