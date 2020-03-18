@@ -21,6 +21,7 @@ class OdometryNode:
 
     def __init__(self):
         # init internals
+        self.robot_name = rospy.get_param('robot_name')
         self.last_received_pose = Pose()
         self.last_received_twist = Twist()
         self.last_recieved_stamp = None
@@ -36,7 +37,7 @@ class OdometryNode:
     def sub_robot_pose_update(self, msg):
         # Find the index of the racecar
         try:
-            arrayIndex = msg.name.index('racecar::base_link')
+            arrayIndex = msg.name.index(self.robot_name+'::base_link')
         except ValueError as e:
             # Wait for Gazebo to startup
             pass
@@ -53,7 +54,7 @@ class OdometryNode:
         cmd = Odometry()
         cmd.header.stamp = self.last_recieved_stamp
         cmd.header.frame_id = 'map'
-        cmd.child_frame_id = 'base_link' # This used to be odom
+        cmd.child_frame_id = self.robot_name+'/base_link' # This used to be odom
         cmd.pose.pose = self.last_received_pose
         cmd.twist.twist = self.last_received_twist
         self.pub_odom.publish(cmd)

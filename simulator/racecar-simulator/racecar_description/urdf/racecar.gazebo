@@ -51,7 +51,8 @@
 
 <gazebo>
   <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-    <robotNamespace>/racecar</robotNamespace>
+<!--    <robotNamespace>/racecar1</robotNamespace>-->
+<!--    <robotParam>robot_description1</robotParam>-->
     <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
   </plugin>
 </gazebo>
@@ -84,7 +85,7 @@
         </noise>
       </ray>
       <plugin name="gazebo_ros_hokuyo_controller" filename="libgazebo_ros_laser.so">
-        <topicName>/scan</topicName>
+        <topicName>scan</topicName>
         <frameName>laser</frameName>
       </plugin>
     </sensor>
@@ -93,7 +94,7 @@
 
 <!-- camera -->
 <gazebo reference="camera_link">
-  <sensor type="camera" name="camera1">
+  <sensor type="camera" name="camera">
     <update_rate>30.0</update_rate>
     <camera name="head">
       <save enabled="true">
@@ -119,9 +120,10 @@
       </noise>
     </camera>
     <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+<!--      <robotNamespace>racecar1</robotNamespace>-->
       <alwaysOn>true</alwaysOn>
       <updateRate>0.0</updateRate>
-      <cameraName>racecar/camera1</cameraName>
+      <cameraName>camera</cameraName>
       <imageTopicName>image_raw</imageTopicName>
       <cameraInfoTopicName>camera_info</cameraInfoTopicName>
       <frameName>camera_link</frameName>

@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!--Arguments-->
+  <arg name="r_name" default="racecar"/>
+  <arg name="vesc_ns" default="/vesc"/>
+
+  <param name="robot1_num" value="1"/>
+  <param name="robot2_num" value="2"/>
+  <param name="robot3_num" value="3"/>
+  <param name="robot4_num" value="4"/>
+
+  <!--Each Racecar Broadcasts its Identification Message-->
+
+  <node pkg="racecar_communication" type="send_id_msg.py" name="id_publisher1" output="screen">
+    <remap from="/vesc/odom" to="$(arg vesc_ns)1/odom" />
+    <remap from="/move_base/local_costmap/footprint" to="$(arg r_name)1/move_base/local_costmap/footprint" />
+    <remap from="robot_num" to="robot1_num"/>
+  </node>
+
+  <node pkg="racecar_communication" type="send_id_msg.py" name="id_publisher2" output="screen">
+    <remap from="/vesc/odom" to="$(arg vesc_ns)2/odom" />
+    <remap from="/move_base/local_costmap/footprint" to="$(arg r_name)2/move_base/local_costmap/footprint" />
+    <remap from="robot_num" to="robot2_num"/>
+  </node>
+
+  <node pkg="racecar_communication" type="send_id_msg.py" name="id_publisher3" output="screen">
+    <remap from="/vesc/odom" to="$(arg vesc_ns)3/odom" />
+    <remap from="/move_base/local_costmap/footprint" to="$(arg r_name)3/move_base/local_costmap/footprint" />
+    <remap from="robot_num" to="robot3_num"/>
+  </node>
+
+  <node pkg="racecar_communication" type="send_id_msg.py" name="id_publisher4" output="screen">
+    <remap from="/vesc/odom" to="$(arg vesc_ns)4/odom" />
+    <remap from="/move_base/local_costmap/footprint" to="$(arg r_name)4/move_base/local_costmap/footprint" />
+    <remap from="robot_num" to="robot4_num"/>
+  </node>
+
+  <!--Each Racecar Receives Others' Identification Messages-->
+  <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber1" output="screen">
+    <remap from="robot_num" to="robot1_num"/>
+    <remap from="/ids_received_test" to="/$(arg r_name)1/ids_received_test" />
+  </node>
+
+  <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber2" output="screen">
+    <remap from="robot_num" to="robot2_num"/>
+    <remap from="/ids_received_test" to="/$(arg r_name)2/ids_received_test" />
+  </node>
+
+  <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber3" output="screen">
+    <remap from="robot_num" to="robot3_num"/>
+    <remap from="/ids_received_test" to="/$(arg r_name)3/ids_received_test" />
+  </node>
+
+  <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber4" output="screen">
+    <remap from="robot_num" to="robot4_num"/>
+    <remap from="/ids_received_test" to="/$(arg r_name)4/ids_received_test" />
+  </node>
+
+</launch>

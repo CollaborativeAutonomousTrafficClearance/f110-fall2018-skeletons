@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import rospy
-from race.msg import drive_param
+from racecar_control.msg import drive_param
 from nav_msgs.msg import Odometry
 import math
 import numpy as np
@@ -21,7 +21,6 @@ VELOCITY = 0.15 # m/s
 # waypoints - hard-coded for now
 
 path_points = [(float(-49), float(0.2625), float(0.05)), (float(-48), float(0.2625), float(0.05)), (float(-47), float(0.2625), float(0.05)), (float(-46), float(0.2625), float(0.05)), (float(-45), float(0.2625), float(0.05)), (float(-44), float(0.2625), float(0.05)), (float(-43), float(0.2625), float(0.05)), (float(-42), float(0.2625), float(0.05)), (float(-41), float(0.2625), float(0.05)), (float(-40), float(0.2625), float(0.05)), (float(-39), float(0.2625), float(0.05)), (float(-38), float(0.2625), float(0.05)), (float(-37), float(0.2625), float(0.05)), (float(-36), float(0.2625), float(0.05)), (float(-35), float(0.2625), float(0.05)), (float(-34), float(0.2625), float(0.05)), (float(-33), float(0.2625), float(0.05))]
- 
        
 # Publisher for 'drive_parameters' (speed and steering angle)
 pub = rospy.Publisher('drive_parameters', drive_param, queue_size=1)

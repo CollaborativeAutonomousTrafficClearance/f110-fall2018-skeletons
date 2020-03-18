@@ -1,33 +1,25 @@
 #!/usr/bin/env python
 
-"""
-This node subscribes to the control commands sent by move_base and publishes
- AckermannDriveStamped messages. The commands sent by move_base are of type
- geometry_msgs/Twist
-"""
-
 import rospy
-from geometry_msgs.msg import Twist
-from ackermann_publisher import AckermannPublisher
 from ackermann_msgs.msg import AckermannDriveStamped
 import math
+from geometry_msgs.msg import Twist
 
-class MoveBaseFollower(AckermannPublisher):
+ack_publisher = rospy.Publisher('/ackermann_cmd_mux/input/teleop', AckermannDriveStamped, queue_size=1)
 
-    def __init__(self, node_name):
-        super(MoveBaseFollower, self).__init__(node_name)
-        rospy.Subscriber("/cmd_vel", Twist, self.cmd_callback, queue_size=5)
+def ackermanCallback(msg):
+    ack_msg = AckermannDriveStamped()
+    speed = math.sqrt(msg.linear.x*msg.linear.x + msg.linear.y*msg.linear.y)
+    steering_angle = msg.angular.z
+    ack_msg.drive.steering_angle = steering_angle
+    ack_msg.drive.speed = speed
 
-    def cmd_callback(self, msg):
-        speed = math.sqrt(msg.linear.x*msg.linear.x + msg.linear.y*msg.linear.y)
-        steering_angle = msg.angular.z
-
-        #edited, to make the cmd_vel topic publishes to input teleop topic
-        ack_publisher = rospy.Publisher('/vesc/ackermann_cmd_mux/input/teleop', AckermannDriveStamped, queue_size=1)
-        ack_publisher.publish_ackermann(steering_angle, speed)
+    ack_publisher.publish(ack_msg)
 
 
 if __name__ == '__main__':
-    MoveBaseFollower("move_base_follower")
-    rospy.spin()
-
+    rospy.init_node('custom_move_base_follower',anonymous=True)  #When I removed queue size, it worked
+    rospy.Subscriber("/cmd_vel", Twist, ackermanCallback)
+    
+    while not rospy.is_shutdown():
+        rospy.spin()

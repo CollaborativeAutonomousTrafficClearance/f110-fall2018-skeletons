@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!--Arguments-->
+  <arg name="r_name" default="racecar"/>
+  <arg name="vesc_ns" default="/vesc"/>
+
+  <param name="robot1_num" value="1"/>
+  <param name="robot2_num" value="2"/>
+
+  <!--Each Racecar Broadcasts its Identification Message-->
+
+  <node pkg="racecar_communication" type="send_id_msg.py" name="id_publisher1" output="screen">
+    <remap from="/vesc/odom" to="$(arg vesc_ns)1/odom" />
+    <remap from="/move_base/local_costmap/footprint" to="$(arg r_name)1/move_base/local_costmap/footprint" />
+    <remap from="robot_num" to="robot1_num"/>
+  </node>
+
+  <node pkg="racecar_communication" type="send_id_msg.py" name="id_publisher2" output="screen">
+    <remap from="/vesc/odom" to="$(arg vesc_ns)2/odom" />
+    <remap from="/move_base/local_costmap/footprint" to="$(arg r_name)2/move_base/local_costmap/footprint" />
+    <remap from="robot_num" to="robot2_num"/>
+  </node>
+
+  <!--Each Racecar Receives Others' Identification Messages-->
+  <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber1" output="screen">
+    <remap from="robot_num" to="robot1_num"/>
+    <remap from="/footprints_combined" to="/$(arg r_name)1/footprints_combined" />
+  </node>
+
+  <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber2" output="screen">
+    <remap from="robot_num" to="robot2_num"/>
+    <remap from="/footprints_combined" to="/$(arg r_name)2/footprints_combined" />
+  </node>
+
+</launch>

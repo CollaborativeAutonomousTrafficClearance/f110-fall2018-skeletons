@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from race.msg import drive_param
+from racecar_control.msg import drive_param
 from ackermann_msgs.msg import AckermannDriveStamped
 
 # Publisher for AckermannDriveStamped msg

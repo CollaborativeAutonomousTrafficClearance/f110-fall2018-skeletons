@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!--Arguments-->
+  <!--<arg name="world_name" default="threeLanesSmoothCurve3" /> -->
+  <arg name="world_name" default="threeLanesCurve" />
+  <arg name="gui" default="true" />
+  <arg name="run_camera" default="false"/>
+  <arg name="r_name" default="racecar"/>
+  <arg name="vesc_ns" default="/vesc"/>
+  <arg name="x_pos" default="5"/>
+  <arg name="y_pos" default="-1.6"/>
+  <arg name="z_pos" default="0.05"/>
+
+  <!--Gazebo World-->
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find racecar_gazebo)/worlds/$(arg world_name).sdf"/>
+    <arg name="gui" value="$(arg gui)"/>
+  </include>
+
+
+  <include file="$(find racecar_gazebo)/launch/racecar_lane_keeping.launch" ns="/$(arg r_name)">
+    <arg name="r_name" value="$(arg r_name)"/>
+    <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    <arg name="r_num" value="1"/>
+    <arg name="x_pos" value="$(arg x_pos)"/>
+    <arg name="y_pos" value="$(arg y_pos)"/>
+    <arg name="z_pos" value="$(arg z_pos)"/>
+  </include>
+
+</launch>

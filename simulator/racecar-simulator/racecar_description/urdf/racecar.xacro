@@ -42,7 +42,7 @@
       <xacro:left_rear_wheel_geometry />
       <material name="black" />
     </visual>
-    <collision>robot
+    <collision>
       <xacro:left_wheels_collision_geometry />
     </collision>
   </link>
@@ -227,7 +227,7 @@
   </link>
 
   <joint name="camera_joint" type="fixed">
-    <origin xyz="0.390 0 0.04" rpy="0 0 0"/>
+    <origin xyz="0.390 0 0.08" rpy="0 -0.4 0"/>
     <parent link="chassis"/>
     <child link="camera_link"/>
     <axis xyz="0 0 1" />

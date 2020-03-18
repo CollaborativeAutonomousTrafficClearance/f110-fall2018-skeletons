@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<launch>
+    
+    <!--Arguments-->
+    <arg name="world_name" default="threeLanesCurve" />
+    <arg name="gui" default="true" />
+    <arg name="run_camera" default="false"/>
+    <arg name="r_name" default="racecar"/>
+    <arg name="vesc_ns" default="/vesc"/>
+
+
+    <!--Launching Gazebo With The Racecar-->
+    <include file="$(find racecar_gazebo)/launch/one_racecar.launch">
+      <arg name="world_name" value="$(arg world_name)" />
+      <arg name="gui" value="$(arg gui)" />
+      <arg name="run_camera" value="$(arg run_camera)"/>
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    </include>
+
+
+    <!-- Front steering: locate base_link at the center of the rear-axle -->
+    <!-- For the cost planner -->
+    <!-- See this https://answers.ros.org/question/237035/steering-axis-of-carlike-robot-with-teb_local_planner/ -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_to_rear_axle"
+        args="-0.155 0.0 0.0 0.0 0.0 0.0 1.0 $(arg r_name)/base_link $(arg r_name)/rear_axle" />
+
+
+    <!--- Run map server and AMCL -->
+    <include file="$(find racecar_localization)/launch/one_racecar_amcl.launch">
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>  
+      <arg name="map_file" value="$(find racecar_mapping)/maps/$(arg world_name).yaml"/>
+    </include>
+
+
+    <!--The Move Base Node-->
+    <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    </include>
+
+
+    <!--Following Navigation Goals-->
+    <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower" output="screen">
+          <remap from="/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)/ackermann_cmd_mux/input/teleop"/>
+          <remap from="/cmd_vel" to="$(arg r_name)/cmd_vel"/>
+    </node>
+
+
+    <!--Rviz Node-->
+    <node name="$(anon rviz)" pkg="rviz" type="rviz"
+          args="-d $(find racecar_rviz)/rviz/one_navigation.rviz" output="screen" ns="$(arg r_name)"/>
+
+
+</launch>

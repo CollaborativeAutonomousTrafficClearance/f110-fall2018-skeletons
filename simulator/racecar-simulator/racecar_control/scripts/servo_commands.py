@@ -11,13 +11,13 @@ def set_throttle_steer(data):
 
     global flag_move
 
-    pub_vel_left_rear_wheel = rospy.Publisher('/racecar/left_rear_wheel_velocity_controller/command', Float64, queue_size=1)
-    pub_vel_right_rear_wheel = rospy.Publisher('/racecar/right_rear_wheel_velocity_controller/command', Float64, queue_size=1)
-    pub_vel_left_front_wheel = rospy.Publisher('/racecar/left_front_wheel_velocity_controller/command', Float64, queue_size=1)
-    pub_vel_right_front_wheel = rospy.Publisher('/racecar/right_front_wheel_velocity_controller/command', Float64, queue_size=1)
+    pub_vel_left_rear_wheel = rospy.Publisher('/left_rear_wheel_velocity_controller/command', Float64, queue_size=1)
+    pub_vel_right_rear_wheel = rospy.Publisher('/right_rear_wheel_velocity_controller/command', Float64, queue_size=1)
+    pub_vel_left_front_wheel = rospy.Publisher('/left_front_wheel_velocity_controller/command', Float64, queue_size=1)
+    pub_vel_right_front_wheel = rospy.Publisher('/right_front_wheel_velocity_controller/command', Float64, queue_size=1)
 
-    pub_pos_left_steering_hinge = rospy.Publisher('/racecar/left_steering_hinge_position_controller/command', Float64, queue_size=1)
-    pub_pos_right_steering_hinge = rospy.Publisher('/racecar/right_steering_hinge_position_controller/command', Float64, queue_size=1)
+    pub_pos_left_steering_hinge = rospy.Publisher('/left_steering_hinge_position_controller/command', Float64, queue_size=1)
+    pub_pos_right_steering_hinge = rospy.Publisher('/right_steering_hinge_position_controller/command', Float64, queue_size=1)
 
     # Velocity is in terms of radians per second.
     # Want to go 1 m/s with a wheel of radius 0.05m. This translates to 19.97 radians per second, roughly 20.
@@ -36,7 +36,7 @@ def servo_commands():
 
     rospy.init_node('servo_commands', anonymous=True)
 
-    rospy.Subscriber("/racecar/ackermann_cmd_mux/output", AckermannDriveStamped, set_throttle_steer)
+    rospy.Subscriber("/ackermann_cmd_mux/output", AckermannDriveStamped, set_throttle_steer)
 
     # spin() simply keeps python from exiting until this node is stopped
     rospy.spin()

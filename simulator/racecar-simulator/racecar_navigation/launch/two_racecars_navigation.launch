@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<launch>
+    
+    <!--Arguments-->
+    <arg name="world_name" default="threeLanesCurve" />
+    <arg name="gui" default="true" />
+    <arg name="run_camera" default="false"/>
+    <arg name="r_name" default="racecar"/>
+    <arg name="vesc_ns" default="/vesc"/>
+
+    <arg name="x_pos1" default="5"/>
+    <arg name="y_pos1" default="-1.6"/>
+    <arg name="z_pos1" default="0.05"/>
+
+    <arg name="x_pos2" default="-5"/>
+    <arg name="y_pos2" default="1.6"/>
+    <arg name="z_pos2" default="0.05"/>
+
+
+    <!--Launching Gazebo With The Racecar-->
+    <include file="$(find racecar_gazebo)/launch/two_racecars.launch">
+      <arg name="world_name" value="$(arg world_name)" />
+      <arg name="gui" value="$(arg gui)" />
+      <arg name="run_camera" value="$(arg run_camera)"/>
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+
+      <arg name="x_pos1" value="$(arg x_pos1)"/>
+      <arg name="y_pos1" value="$(arg y_pos1)"/>
+      <arg name="z_pos1" value="$(arg z_pos1)"/>
+
+      <arg name="x_pos2" value="$(arg x_pos2)"/>
+      <arg name="y_pos2" value="$(arg y_pos2)"/>
+      <arg name="z_pos2" value="$(arg z_pos2)"/>
+    </include>
+
+
+    <!-- Front steering: locate base_link at the center of the rear-axle -->
+    <!-- For the cost planner -->
+    <!-- See this https://answers.ros.org/question/237035/steering-axis-of-carlike-robot-with-teb_local_planner/ -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_to_rear_axle1"
+        args="-0.155 0.0 0.0 0.0 0.0 0.0 1.0 $(arg r_name)1/base_link $(arg r_name)1/rear_axle" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_link_to_rear_axle2"
+        args="-0.155 0.0 0.0 0.0 0.0 0.0 1.0 $(arg r_name)2/base_link $(arg r_name)2/rear_axle" />
+
+
+    <!--- Run map server and AMCL -->
+    <include file="$(find racecar_localization)/launch/two_racecars_amcl.launch">
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>  
+      <arg name="map_file" value="$(find racecar_mapping)/maps/$(arg world_name).yaml"/>
+    </include>
+
+
+    <!--The Move Base Node-->
+    <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
+      <arg name="r_name" value="$(arg r_name)1"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
+    </include>
+
+    <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
+      <arg name="r_name" value="$(arg r_name)2"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)2"/>
+    </include>
+
+
+    <!--Following Navigation Goals-->
+    <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower1" output="screen">
+          <remap from="/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)1/ackermann_cmd_mux/input/teleop"/>
+          <remap from="/cmd_vel" to="$(arg r_name)1/cmd_vel"/>
+    </node>
+
+    <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower2" output="screen">
+          <remap from="/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)2/ackermann_cmd_mux/input/teleop"/>
+          <remap from="/cmd_vel" to="$(arg r_name)2/cmd_vel"/>
+    </node>
+
+    <!--Inter-Communication-->
+    <include file="$(find racecar_communication)/launch/two_racecars_communication.launch">
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    </include>
+
+    <!--Rviz Node-->
+    <node name="$(anon rviz)" pkg="rviz" type="rviz"
+          args="-d $(find racecar_rviz)/rviz/two_navigation.rviz" output="screen"/>
+
+
+</launch>
