@@ -1,0 +1,6 @@
+<!--
+  Used for visualising the arlobot while building a map or navigating with the ros navistack.
+ -->
+<launch>
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find racecar_rviz)/rviz/four_navigation.rviz"/>
+</launch>
