@@ -39,22 +39,22 @@
   <!--Each Racecar Receives Others' Identification Messages-->
   <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber1" output="screen">
     <remap from="robot_num" to="robot1_num"/>
-    <remap from="/ids_received_test" to="/$(arg r_name)1/ids_received_test" />
+    <remap from="/footprints_combined" to="/$(arg r_name)1/footprints_combined" />
   </node>
 
   <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber2" output="screen">
     <remap from="robot_num" to="robot2_num"/>
-    <remap from="/ids_received_test" to="/$(arg r_name)2/ids_received_test" />
+    <remap from="/footprints_combined" to="/$(arg r_name)2/footprints_combined" />
   </node>
 
   <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber3" output="screen">
     <remap from="robot_num" to="robot3_num"/>
-    <remap from="/ids_received_test" to="/$(arg r_name)3/ids_received_test" />
+    <remap from="/footprints_combined" to="/$(arg r_name)3/footprints_combined" />
   </node>
 
   <node pkg="racecar_communication" type="rec_id_msg.py" name="id_subscriber4" output="screen">
     <remap from="robot_num" to="robot4_num"/>
-    <remap from="/ids_received_test" to="/$(arg r_name)4/ids_received_test" />
+    <remap from="/footprints_combined" to="/$(arg r_name)4/footprints_combined" />
   </node>
 
 </launch>
