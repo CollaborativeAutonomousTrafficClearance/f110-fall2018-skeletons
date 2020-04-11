@@ -2,6 +2,7 @@
 <launch>
 
   <!--Arguments-->
+  <!--<arg name="world_name" default="threeLanes" /> -->
   <arg name="world_name" default="threeLanes" />
   <arg name="gui" default="true" />
   <arg name="run_camera" default="false"/>
@@ -18,7 +19,7 @@
   </include>
 
 
-  <include file="$(find racecar_gazebo)/launch/racecar_lane_keeping.launch" ns="/$(arg r_name)">
+  <include file="$(find racecar_gazebo)/launch/racecar_krauss_model.launch" ns="/$(arg r_name)">
     <arg name="r_name" value="$(arg r_name)"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     <arg name="r_num" value="1"/>

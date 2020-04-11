@@ -118,15 +118,10 @@
           <remap from="/cmd_vel" to="$(arg r_name)4/cmd_vel"/>
     </node>
 
-    <!--Inter-Communication-->
-    <include file="$(find racecar_communication)/launch/four_racecars_communication.launch">
-      <arg name="r_name" value="$(arg r_name)"/>
-      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
-    </include>
 
     <!--Rviz Node-->
     <node name="$(anon rviz)" pkg="rviz" type="rviz"
-          args="-d $(find racecar_rviz)/rviz/four_navigation.rviz" output="screen"/>
+          args="-d $(find racecar_rviz)/rviz/two_navigation.rviz" output="screen"/>
 
 
 </launch>

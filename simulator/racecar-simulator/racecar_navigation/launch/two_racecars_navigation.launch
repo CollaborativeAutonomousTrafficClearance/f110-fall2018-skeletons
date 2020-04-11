@@ -2,18 +2,18 @@
 <launch>
     
     <!--Arguments-->
-    <arg name="world_name" default="threeLanesCurve" />
+    <arg name="world_name" default="threeLanes" />
     <arg name="gui" default="true" />
     <arg name="run_camera" default="false"/>
     <arg name="r_name" default="racecar"/>
     <arg name="vesc_ns" default="/vesc"/>
 
     <arg name="x_pos1" default="5"/>
-    <arg name="y_pos1" default="-1.6"/>
+    <arg name="y_pos1" default="-0.2625"/>
     <arg name="z_pos1" default="0.05"/>
 
     <arg name="x_pos2" default="-5"/>
-    <arg name="y_pos2" default="1.6"/>
+    <arg name="y_pos2" default="0.2625"/>
     <arg name="z_pos2" default="0.05"/>
 
 
@@ -76,11 +76,6 @@
           <remap from="/cmd_vel" to="$(arg r_name)2/cmd_vel"/>
     </node>
 
-    <!--Inter-Communication-->
-    <include file="$(find racecar_communication)/launch/two_racecars_communication.launch">
-      <arg name="r_name" value="$(arg r_name)"/>
-      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
-    </include>
 
     <!--Rviz Node-->
     <node name="$(anon rviz)" pkg="rviz" type="rviz"

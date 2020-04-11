@@ -26,7 +26,7 @@
 
 
   <!-- ros_control racecar launch file -->
-  <include file="$(find racecar_control)/launch/racecar_control_lane_keeping.launch" ns="/$(arg r_name)">
+  <include file="$(find racecar_control)/launch/racecar_control_krauss_model.launch" ns="/$(arg r_name)">
     <arg name="r_name" value="$(arg r_name)"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     <arg name="r_num" value="$(arg r_num)"/>

@@ -11,7 +11,7 @@ import os
 import roslib
 roslib.load_manifest('racecar_control')
 import sys
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -435,11 +435,20 @@ class LaneKeeping:
     def __init__(self):
         
         self.yaw = 0 # vehicle's yaw
-        self.velocity =  0.15 # constant velocity of vehicle (m/s)
+        self.velocity =  0.3 # velocity of vehicle (m/s)
         self.pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
 
         self.line_lt = Line()         # line on the left of the lane
         self.line_rt = Line()         # line on the right of the lane
+
+    def velCallback(self, velMsg):
+        '''
+        Sets the vehicle's desired velocity
+        
+        :param odomMsg: the float32 message sent through the topic: '/desired_vel'
+        '''
+        self.velocity = velMsg.data
+
 
     def odometryCallback(self, odomMsg):
         '''
@@ -496,8 +505,8 @@ class LaneKeeping:
         wp_x,wp_y=get_waypoint_from_fit(distances_to_get_waypoints_at,left_fit_pixel,right_fit_pixel,\
                     ym_per_pix,xm_per_pix,in_meter=True)
 
-        rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
-        rospy.loginfo(wp_y)
+        ##rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
+        ##rospy.loginfo(wp_y)
 
         path_points = [((wp_x[0]),(wp_y[0]),(float(0.05))), ((wp_x[1]),(wp_y[1]),(0.05)), ((wp_x[2]),(wp_y[2]),(0.05))] # the three generated waypoints
 
@@ -520,5 +529,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/vesc/odom', Odometry, lk.odometryCallback, queue_size=1)
     # subscribe to '/camera/image_raw'
     rospy.Subscriber('/camera/image_raw', Image, lk.imageCallback)
+    # subscribe to '/camera/image_raw'
+    rospy.Subscriber('/desired_vel', Float32, lk.velCallback)
 
     rospy.spin()

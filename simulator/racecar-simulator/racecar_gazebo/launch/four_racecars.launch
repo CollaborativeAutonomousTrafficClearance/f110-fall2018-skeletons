@@ -71,4 +71,10 @@
     <arg name="z_pos" value="$(arg z_pos4)"/>
   </include>
 
+    <!--Inter-Communication-->
+    <include file="$(find racecar_communication)/launch/four_racecars_communication.launch">
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    </include>
+
 </launch>
