@@ -2,15 +2,16 @@
 <launch>
 
   <!--Arguments-->
-  <!--<arg name="world_name" default="threeLanesSmoothCurve3" /> -->
   <arg name="world_name" default="threeLanes" />
   <arg name="gui" default="true" />
-  <arg name="run_camera" default="false"/>
+
   <arg name="r_name" default="racecar"/>
   <arg name="vesc_ns" default="/vesc"/>
-  <arg name="x_pos" default="5"/>
-  <arg name="y_pos" default="0"/>
+  <arg name="r_type" default="racecar"/>
+  <arg name="x_pos" default="-50"/>
+  <arg name="y_pos" default="-0.25"/>
   <arg name="z_pos" default="0.05"/>
+  <arg name="ctrl_method" default=""/>
 
   <!--Gazebo World-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -23,9 +24,11 @@
     <arg name="r_name" value="$(arg r_name)"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     <arg name="r_num" value="1"/>
+    <arg name="r_type" value="$(arg r_type)"/>
     <arg name="x_pos" value="$(arg x_pos)"/>
     <arg name="y_pos" value="$(arg y_pos)"/>
     <arg name="z_pos" value="$(arg z_pos)"/>
+    <arg name="ctrl_method" value="$(arg ctrl_method)"/>
   </include>
 
 </launch>

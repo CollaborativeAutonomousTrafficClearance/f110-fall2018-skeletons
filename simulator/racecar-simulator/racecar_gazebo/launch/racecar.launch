@@ -6,9 +6,10 @@
   <arg name="vesc_ns" default="/vesc"/>
   <arg name="r_num" default="1"/>
   <arg name="r_type" default="racecar"/>
-  <arg name="x_pos" default="5"/>
-  <arg name="y_pos" default="-1.6"/>
+  <arg name="x_pos" default="-50"/>
+  <arg name="y_pos" default="0"/>
   <arg name="z_pos" default="0.05"/>
+  <arg name="ctrl_method" default=""/>
 
 
   <!--TF Prefix-->
@@ -26,7 +27,7 @@
 
 
   <!-- ros_control racecar launch file -->
-  <include file="$(find racecar_control)/launch/racecar_control.launch" ns="/$(arg r_name)">
+  <include file="$(find racecar_control)/launch/racecar_control$(arg ctrl_method).launch" ns="/$(arg r_name)">
     <arg name="r_name" value="$(arg r_name)"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     <arg name="r_num" value="$(arg r_num)"/>
