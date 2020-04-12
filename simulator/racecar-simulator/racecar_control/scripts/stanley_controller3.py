@@ -12,7 +12,7 @@ import os
 # CONSTANTS #
 #############
 
-VELOCITY = 0.15 # m/s
+VELOCITY = 0.1 # m/s
 
 ###########
 # GLOBALS #
@@ -20,8 +20,7 @@ VELOCITY = 0.15 # m/s
 
 # waypoints - hard-coded for now
 
-path_points = [(float(0), float(-1.3), float(0.05)), (float(1), float(-1.3), float(0.05)), (float(2), float(-1.3), float(0.05)), (float(3), float(-1.3), float(0.05)), (float(4), float(-1.3), float(0.05)), (float(5), float(-1.3), float(0.05)), (float(6), float(-1.3), float(0.05)), (float(7), float(-1.3), float(0.05)), (float(7), float(-1.3), float(0.05)), (float(9.75), float(-1.3), float(0.05)), (float(10.4), float(-1.1258), float(0.05)), (float(10.8758), float(-0.65), float(0.05)), (float(11.05), float(0), float(0.05)), (float(10.8758), float(0.65), float(0.05)), (float(10.4), float(1.1258), float(0.05)), (float(9.75), float(1.3), float(0.05)), (float(0), float(1.3), float(0.05))]
- 
+path_points = [(float(-50), float(0.2625), float(0.05)), (float(-49.5), float(0.2625), float(0.05)), (float(-49), float(0.2625), float(0.05))]
        
 # Publisher for 'drive_parameters' (speed and steering angle)
 pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1)
@@ -66,9 +65,14 @@ def callback(data):
     phi = (np.mod(phi1 + np.pi, 2 * np.pi) - np.pi) - (np.mod(phi2 + np.pi, 2 * np.pi) - np.pi)
     phi = np.mod(phi + np.pi, 2 * np.pi) - np.pi
 
-    # calculate the re2uired steering angle
-    k = 0.005
-    ks = 0.1
+    # calculate the required steering angle
+    if ((path_points[min_idx][1] - data.pose.pose.position.y) >= 0.15):
+        k = 0.1
+    else:
+        k = 0.005
+
+    ks = 0.15
+
     angle    = (k/(ks+VELOCITY))*phi + psi
     
     angle = np.clip(angle, -0.4189, 0.4189) # 0.4189 radians = 24 degrees because car can only turn 24 degrees max
