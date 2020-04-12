@@ -25,6 +25,13 @@
     <remap from="/joint_states" to="/$(arg r_name)/joint_states" />
   </node>
 
+  <!-- krauss model node -->
+  <node pkg="racecar_control" type="krauss_model.py" name="krauss_model" output="screen">
+    <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
+    <remap from="/ids_combined" to="/$(arg r_name)/ids_combined"/>
+    <remap from="/desired_vel" to="/$(arg r_name)/desired_vel"/>
+  </node>
+
   <!-- lane keeping node -->
   <node pkg="racecar_control" type="lane_keeping.py" name="lane_keeping" output="screen">
     <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>

@@ -53,6 +53,8 @@ add_message_files(
   FILES
   IDStamped.msg
   FootprintsCombined.msg
+  ID.msg
+  IDsCombined.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -1,24 +1,28 @@
 <?xml version="1.0"?>
 <launch>
 
-  <arg name="world_name" default="threeLanesCurve" />
+  <arg name="world_name" default="threeLanes" />
   <arg name="gui" default="true" />
-  <arg name="run_camera" default="false"/>
+
   <arg name="r_name" default="racecar"/>
   <arg name="vesc_ns" default="/vesc"/>
-  <arg name="x_pos" default="5"/>
-  <arg name="y_pos" default="-1.6"/>
+  <arg name="r_type" default="racecar"/>
+  <arg name="x_pos" default="-50"/>
+  <arg name="y_pos" default="-0.25"/>
   <arg name="z_pos" default="0.05"/>
+  <arg name="ctrl_method" default=""/>
 
   <include file="$(find racecar_gazebo)/launch/one_racecar.launch">
     <arg name="world_name" value="$(arg world_name)" />
     <arg name="gui" value="$(arg gui)" />
-    <arg name="run_camera" value="$(arg run_camera)"/>
+
     <arg name="r_name" value="$(arg r_name)"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    <arg name="r_type" value="$(arg r_type)"/>
     <arg name="x_pos" value="$(arg x_pos)"/>
     <arg name="y_pos" value="$(arg y_pos)"/>
     <arg name="z_pos" value="$(arg z_pos)"/>
+    <arg name="ctrl_method" value="$(arg ctrl_method)"/>
   </include>
 
   <include file="$(find racecar_mapping)/launch/gmapping.launch" ns="/$(arg r_name)">

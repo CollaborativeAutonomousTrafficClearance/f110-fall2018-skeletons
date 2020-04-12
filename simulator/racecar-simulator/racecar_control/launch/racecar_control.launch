@@ -36,7 +36,7 @@
     <remap from="/right_steering_hinge_position_controller/command" to="/$(arg r_name)/right_steering_hinge_position_controller/command"/>
   </node>
 
-  <!-- servo node -->
+  <!-- keyboard node -->
   <node pkg="racecar_control" type="keyboard_teleop$(arg r_num).py" name="keyboard_teleop" output="screen">
     <remap from="/vesc/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)/ackermann_cmd_mux/input/teleop"/>
   </node>

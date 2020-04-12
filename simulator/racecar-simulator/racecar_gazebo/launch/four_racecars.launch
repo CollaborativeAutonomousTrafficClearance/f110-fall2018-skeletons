@@ -2,28 +2,35 @@
 <launch>
 
   <!--Arguments-->
-  <!--<arg name="world_name" default="threeLanesSmoothCurve3" /> -->
-  <arg name="world_name" default="threeLanesCurve" />
+  <arg name="world_name" default="threeLanes" />
   <arg name="gui" default="true" />
-  <arg name="run_camera" default="false"/>
+
   <arg name="r_name" default="racecar"/>
   <arg name="vesc_ns" default="/vesc"/>
 
-  <arg name="x_pos1" default="5"/>
-  <arg name="y_pos1" default="-1.6"/>
+  <arg name="r_type1" default="racecar"/>
+  <arg name="x_pos1" default="-50"/>
+  <arg name="y_pos1" default="-0.2625"/>
   <arg name="z_pos1" default="0.05"/>
+  <arg name="ctrl_method1" default=""/>
 
-  <arg name="x_pos2" default="-5"/>
-  <arg name="y_pos2" default="1.6"/>
+  <arg name="r_type2" default="racecar"/>
+  <arg name="x_pos2" default="-50"/>
+  <arg name="y_pos2" default="0.2625"/>
   <arg name="z_pos2" default="0.05"/>
+  <arg name="ctrl_method2" default=""/>
 
-  <arg name="x_pos3" default="5"/>
-  <arg name="y_pos3" default="1.6"/>
+  <arg name="r_type3" default="racecar"/>
+  <arg name="x_pos3" default="-30"/>
+  <arg name="y_pos3" default="-0.2625"/>
   <arg name="z_pos3" default="0.05"/>
+  <arg name="ctrl_method3" default=""/>
 
-  <arg name="x_pos4" default="-5"/>
-  <arg name="y_pos4" default="-1.6"/>
+  <arg name="r_type4" default="racecar"/>
+  <arg name="x_pos4" default="-30"/>
+  <arg name="y_pos4" default="0.2625"/>
   <arg name="z_pos4" default="0.05"/>
+  <arg name="ctrl_method4" default=""/>
 
   <!--Gazebo World-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -36,9 +43,11 @@
     <arg name="r_name" value="$(arg r_name)1"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
     <arg name="r_num" value="1"/>
+    <arg name="r_type" value="$(arg r_type1)"/>
     <arg name="x_pos" value="$(arg x_pos1)"/>
     <arg name="y_pos" value="$(arg y_pos1)"/>
     <arg name="z_pos" value="$(arg z_pos1)"/>
+    <arg name="ctrl_method" value="$(arg ctrl_method1)"/>
   </include>
 
   <!--Racecar 2-->
@@ -46,9 +55,11 @@
     <arg name="r_name" value="$(arg r_name)2"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)2"/>
     <arg name="r_num" value="2"/>
+    <arg name="r_type" value="$(arg r_type2)"/>
     <arg name="x_pos" value="$(arg x_pos2)"/>
     <arg name="y_pos" value="$(arg y_pos2)"/>
     <arg name="z_pos" value="$(arg z_pos2)"/>
+    <arg name="ctrl_method" value="$(arg ctrl_method2)"/>
   </include>
 
   <!--Racecar 3-->
@@ -56,9 +67,11 @@
     <arg name="r_name" value="$(arg r_name)3"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)3"/>
     <arg name="r_num" value="3"/>
+    <arg name="r_type" value="$(arg r_type3)"/>
     <arg name="x_pos" value="$(arg x_pos3)"/>
     <arg name="y_pos" value="$(arg y_pos3)"/>
     <arg name="z_pos" value="$(arg z_pos3)"/>
+    <arg name="ctrl_method" value="$(arg ctrl_method3)"/>
   </include>
 
   <!--Racecar 4-->
@@ -66,9 +79,17 @@
     <arg name="r_name" value="$(arg r_name)4"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)4"/>
     <arg name="r_num" value="4"/>
+    <arg name="r_type" value="$(arg r_type4)"/>
     <arg name="x_pos" value="$(arg x_pos4)"/>
     <arg name="y_pos" value="$(arg y_pos4)"/>
     <arg name="z_pos" value="$(arg z_pos4)"/>
+    <arg name="ctrl_method" value="$(arg ctrl_method4)"/>
   </include>
+
+    <!--Inter-Communication-->
+    <include file="$(find racecar_communication)/launch/four_racecars_communication.launch">
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    </include>
 
 </launch>

@@ -14,11 +14,11 @@ def callback(data):
 
     # velocity from the drive_param message
     msg.drive.speed = data.velocity;
-    msg.drive.acceleration = 1;
+    msg.drive.acceleration = 0;
     msg.drive.jerk = 1;
     # steering angle from the drive_param message
     msg.drive.steering_angle = data.angle
-    msg.drive.steering_angle_velocity = 1
+    msg.drive.steering_angle_velocity = data.velocity;
 
     # publish the message
     pub.publish(msg)
