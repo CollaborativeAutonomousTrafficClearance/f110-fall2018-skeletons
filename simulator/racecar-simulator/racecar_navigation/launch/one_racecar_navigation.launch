@@ -2,7 +2,7 @@
 <launch>
     
     <!--Arguments-->
-    <arg name="world_name" default="threeLanesCurve" />
+    <arg name="world_name" default="threeLanes" />
     <arg name="gui" default="true" />
     <arg name="run_camera" default="false"/>
     <arg name="r_name" default="racecar"/>
@@ -42,10 +42,10 @@
 
 
     <!--Following Navigation Goals-->
-    <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower" output="screen">
+    <!--<node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower" output="screen">
           <remap from="/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)/ackermann_cmd_mux/input/teleop"/>
           <remap from="/cmd_vel" to="$(arg r_name)/cmd_vel"/>
-    </node>
+    </node>-->
 
 
     <!--Rviz Node-->

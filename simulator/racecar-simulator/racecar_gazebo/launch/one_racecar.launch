@@ -8,8 +8,8 @@
   <arg name="run_camera" default="false"/>
   <arg name="r_name" default="racecar"/>
   <arg name="vesc_ns" default="/vesc"/>
-  <arg name="x_pos" default="5"/>
-  <arg name="y_pos" default="0"/>
+  <arg name="x_pos" default="0"/>
+  <arg name="y_pos" default="-0.25"/>
   <arg name="z_pos" default="0.05"/>
 
   <!--Gazebo World-->

@@ -8,6 +8,9 @@ project(racecar_navigation)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  actionlib_msgs
+  rospy
+  std_msgs
   move_base
   nav_msgs
   sensor_msgs
@@ -49,11 +52,12 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+   Lanes_Info.msg
+   BoolWithHeader.msg
+   Nav_Action.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -62,18 +66,18 @@ find_package(catkin REQUIRED COMPONENTS
 #   Service2.srv
 # )
 
-## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+##Generate actions in the 'action' folder
+ add_action_files(
+   FILES
+   LaneKeep.action
+ )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   nav_msgs#   sensor_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   actionlib_msgs
+   std_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -108,7 +112,7 @@ catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES racecar_navigation
 #  CATKIN_DEPENDS move_base nav_msgs sensor_msgs tf tf2_ros
-#  DEPENDS system_lib
+   DEPENDS message_runtime
 )
 
 ###########
