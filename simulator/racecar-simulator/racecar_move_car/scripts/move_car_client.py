@@ -51,6 +51,9 @@ class laneKeepingClient(baseClient):
     def __init__(self):
         self.actionName = 'move_car/laneKeeping_action_server'
         baseClient.__init__(self, self.actionName)
+        self.current_goal.speed = -1  #Undefined for this goal
+        self.current_goal.acc = -100  #Undefined for this goal
+        self.current_goal.direction = -1 #Undefined for this goal
     
 
 class velocityClient(baseClient):
@@ -78,6 +81,8 @@ class laneChangeClient(baseClient):
         baseClient.__init__(self, self.actionName)
         self.direction = 0
         self.last_direction = 0
+        self.current_goal.speed = -1  #Undefined for this goal
+        self.current_goal.acc = -100  #Undefined for this goal
 
 class action_source:
     def __init__(self):
@@ -111,6 +116,9 @@ class nav_master(action_source):
         self.last_chosen_action.control_action = -100   #Initially
         self.chosen_action = Nav_Action()
         self.goalReached = BoolWithHeader()
+        self.vel_client.current_goal.action_source = 0
+        self.lk_client.current_goal.action_source = 0
+        self.lc_client.current_goal.action_source = 0
     
     def update_actions_goals(self, chosen_action, goalReached):
         self.chosen_action = chosen_action
@@ -124,26 +132,18 @@ class nav_master(action_source):
         if self.last_chosen_action.control_action != self.chosen_action.control_action:
             if self.chosen_action == 0:
                 #Setting lane keeping client goal
-                self.lk_client.current_goal.action_source = 0
                 self.lk_client.current_goal.header.stamp = rospy.Time.now()
-                self.lk_client.current_goal.speed = -1  #Undefined for this goal
-                self.lk_client.current_goal.acc = -100  #Undefined for this goal
-                self.lk_client.current_goal.direction = -1 #Undefined for this goal
                 self.lk_client.send_new_goal(self.lk_client.current_goal)
             
                 #Setting velocity client goal
-                self.vel_client.current_goal.action_source = 0
                 self.vel_client.current_goal.header.stamp = rospy.Time.now()
-                self.vel_client.current_goal.speed = -1  #Undefined for this goal
-                self.vel_client.current_goal.acc = -100  #Undefined for this goal
-                self.vel_client.current_goal.direction = -1 #Undefined for this goal
+                self.vel_client.current_goal.speed = -1  #Undefined for this action source
+                self.vel_client.current_goal.acc = -100  #Undefined for this action source
+                self.vel_client.current_goal.direction = -1 #Undefined for this action source
                 self.vel_client.send_new_goal(self.vel_client.current_goal)
             else:
-                self.lc_client.current_goal.action_source = 0
                 self.lc_client.current_goal.header.stamp = rospy.Time.now()
-                self.lc_client.current_goal.speed = -1  #Undefined for this goal
-                self.lc_client.current_goal.acc = -100  #Undefined for this goal
-                
+
                 if self.lk_client.chosen_action.control_action == 1:
                     self.lc_client.current_goal.direction = 1 
                     self.lc_client.send_new_goal(self.lc_client.current_goal)
@@ -174,7 +174,7 @@ def listener():
     goalReached  = message_filters.Subscriber("move_car/nav/goalReached", BoolWithHeader)
     ts = message_filters.TimeSynchronizer([chosen_nav_action, goalReached], 50)
     ts.registerCallback(navigation.update_actions_goals)
-    
+
     #rospy.Subscriber("move_car/RL/chosen_action", RL_Policy_Action, c2.)
     rospy.spin()
 
