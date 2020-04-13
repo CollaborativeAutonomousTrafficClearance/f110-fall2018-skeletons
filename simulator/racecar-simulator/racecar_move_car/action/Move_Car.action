@@ -1,0 +1,10 @@
+# Goal
+racecar_move_car/MoveCarGoal mcGoal
+
+---
+#Result
+bool mcResult
+
+---
+#Feedback
+bool mcFeedback
