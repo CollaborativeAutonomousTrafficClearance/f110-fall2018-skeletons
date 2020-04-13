@@ -16,13 +16,13 @@ class baseClient:
         #self.client.wait_for_server()
         rospy.loginfo("outside the baseclient")
 
-    def cancel_all_goals(self, client_name):
+    def cancel_all_goals(self):
         self.client.cancel_all_goals()
-        rospy.loginfo("move car %s client goal cancels all old goals", client_name)
+        rospy.loginfo("move car client goal cancels all old goals")
 
-    def cancel_this_goal(self, client_name):
+    def cancel_this_goal(self):
         self.client.cancel_goal()
-        rospy.loginfo("move car %s client goal cancels this goal", client_name)
+        rospy.loginfo("move car client goal cancels all old goals")
     
     def cancel_goals_before(self, time):
         self.client.cancel_goals_at_and_before_time(time)
@@ -31,16 +31,16 @@ class baseClient:
         self.current_goal = goal
         self.client.send_goal(self.current_goal, self.done_cb, self.active_cb, self.feedback_cb)
 
-    def feedback_cb(self, feedback, client_name):
+    def feedback_cb(self, feedback):
         self.current_feedback = feedback
-        rospy.loginfo("move car %s client just recieved feedback", client_name)
+        rospy.loginfo("move car client goal cancels all old goals")
     
-    def active_cb(self, client_name):
-        rospy.loginfo("move car %s client goal just sent", client_name)
+    def active_cb(self):
+        rospy.loginfo("move car client goal cancels all old goals")
     
-    def done_cb(self,result, client_name):
+    def done_cb(self,result):
         self.current_result = result
-        rospy.loginfo("move car %s client goal just recieved result", client_name)
+        rospy.loginfo("move car client goal cancels all old goals")
             
     def destroy_last_goal_handle(self):
         self.client_lane_keeping.stop_tracking_goal()    #brief Stops tracking the state of the current goal. Unregisters this goal's callbacks
