@@ -147,36 +147,36 @@ class nav_master(action_source):
             rospy.loginfo("Cannot call a new service, Lane change is still unfinished")
         
         rospy.loginfo("Inside call server ")
-        #if self.last_chosen_action != self.chosen_action.control_action:
-        rospy.loginfo("Inside call server, if condition")
-        if self.chosen_action.control_action == 0:
-            #Setting lane keeping client goal
-            self.lk_client.current_goal.mcGoal.header.stamp = rospy.Time.now()
-            self.lk_client.send_new_goal(self.lk_client.current_goal)
+        if self.last_chosen_action != self.chosen_action.control_action:
+            rospy.loginfo("Inside call server, if condition")
+            if self.chosen_action.control_action == 0:
+                #Setting lane keeping client goal
+                self.lk_client.current_goal.mcGoal.header.stamp = rospy.Time.now()
+                self.lk_client.send_new_goal(self.lk_client.current_goal)
             
-            #Setting velocity client goal
-            self.vel_client.current_goal.mcGoal.header.stamp = rospy.Time.now()
-            self.vel_client.current_goal.mcGoal.speed = -1  #Undefined for this action source
-            self.vel_client.current_goal.mcGoal.acc = -100  #Undefined for this action source
-            self.vel_client.current_goal.mcGoal.direction = -1 #Undefined for this action source
-            self.vel_client.send_new_goal(self.vel_client.current_goal)
-        else:
-            self.lc_client.current_goal.header.stamp = rospy.Time.now()
+                #Setting velocity client goal
+                self.vel_client.current_goal.mcGoal.header.stamp = rospy.Time.now()
+                self.vel_client.current_goal.mcGoal.speed = -1  #Undefined for this action source
+                self.vel_client.current_goal.mcGoal.acc = -100  #Undefined for this action source
+                self.vel_client.current_goal.mcGoal.direction = -1 #Undefined for this action source
+                self.vel_client.send_new_goal(self.vel_client.current_goal)
+            else:
+                self.lc_client.current_goal.header.stamp = rospy.Time.now()
 
-            if self.chosen_action.control_action == 1:
-                self.current_goal.direction = 1 
-                self.lc_client.send_new_goal(self.lc_client.current_goal)
+                if self.chosen_action.control_action == 1:
+                    self.current_goal.direction = 1 
+                    self.lc_client.send_new_goal(self.lc_client.current_goal)
                 
-            elif self.chosen_action.control_action == 2:
-                self.current_goal.direction = 2
-                self.lc_client.send_new_goal(self.lc_client.current_goal)
+                elif self.chosen_action.control_action == 2:
+                    self.current_goal.direction = 2
+                    self.lc_client.send_new_goal(self.lc_client.current_goal)
                 
-            #If the lane change is feasible, cancel lane keeping and velocity clients goals
-            if self.lc_client.current_feedback == 1:
-                self.lk_client.cancel_all_goals()
-                self.lk_client.destroy_last_goal_handle()
-                self.vel_client.cancel_all_goals()
-                self.vel_client.destroy_last_goal_handle()
+                #If the lane change is feasible, cancel lane keeping and velocity clients goals
+                if self.lc_client.current_feedback == 1:
+                    self.lk_client.cancel_all_goals()
+                    self.lk_client.destroy_last_goal_handle()
+                    self.vel_client.cancel_all_goals()
+                    self.vel_client.destroy_last_goal_handle()
         
 
 class qLearning_ambulance_master:
