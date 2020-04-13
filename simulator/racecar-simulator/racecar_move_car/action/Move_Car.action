@@ -3,8 +3,8 @@ racecar_move_car/MoveCarGoal mcGoal
 
 ---
 #Result
-bool mcResult
+int16 mcResult   #-1 is an uninitialized variable
 
 ---
 #Feedback
-bool mcFeedback
+int16 mcFeedback   #-1 is an uninitialized variable

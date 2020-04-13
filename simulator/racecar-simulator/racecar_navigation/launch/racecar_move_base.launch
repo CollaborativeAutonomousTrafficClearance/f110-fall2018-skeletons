@@ -45,8 +45,7 @@
     <remap from="/drive_parameters" to="/$(arg r_name)/drive_parameters"/>
     </node>-->
     
-    <node pkg="racecar_move_car" type="move_car_client.py" name="move_car_client" output="screen" ns="/$(arg r_name)">
-    </node>
+    <node pkg="racecar_move_car" type="move_car_client.py" name="move_car_client" output="screen" ns="/$(arg r_name)"/>
 
     <!-- drive_param to servo node -->
     <node pkg="racecar_control" type="drive_param_to_servo.py" name="drive_param_to_servo" output="screen" ns="/$(arg r_name)">

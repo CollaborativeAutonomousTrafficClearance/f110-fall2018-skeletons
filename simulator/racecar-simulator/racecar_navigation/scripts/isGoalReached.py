@@ -9,7 +9,7 @@ from racecar_navigation.msg import BoolWithHeader
 import message_filters
 
 
-pub = rospy.Publisher('move_car/nav/goalReached', BoolWithHeader, queue_size=1)
+pub = rospy.Publisher('move_car/nav/goalReached', BoolWithHeader, queue_size=10)
 
 class Reached:
     def __init__(self):

@@ -6,8 +6,8 @@
   <arg name="vesc_ns" default="/vesc"/>
   <arg name="r_num" default="1"/>
   <arg name="r_type" default="racecar"/>
-  <arg name="x_pos" default="-50"/>
-  <arg name="y_pos" default="0"/>
+  <arg name="x_pos" default="0"/>
+  <arg name="y_pos" default="-0.775"/>
   <arg name="z_pos" default="0.05"/>
   <arg name="ctrl_method" default=""/>
 
