@@ -166,8 +166,6 @@ class qLearning_ambulance_master:
         self.deltaTime = 1  
 
 
-
-
 def listener():
     navigation = nav_master()
     chosen_nav_action = message_filters.Subscriber("move_car/nav/chosen_action", Nav_Action)

@@ -53,7 +53,7 @@ def listener():
     rospy.init_node('isGoalReached', anonymous=True)
     R = Reached()
     rospy.Subscriber("move_base_simple/goal", PoseStamped, R.set_goal)
-    rospy.Subscriber("vesc/pf/pose/odom", Odometry, R.set_feedback)
+    rospy.Subscriber("/vesc/odom", Odometry, R.set_feedback)
     rospy.spin()
 
 if __name__ == '__main__':

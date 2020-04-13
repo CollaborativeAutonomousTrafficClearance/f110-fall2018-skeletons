@@ -572,6 +572,5 @@ class ActionServer():
     
 
 if __name__ == "__main__":
-    rospy.init_node("action_server_LaneKeeping")
     s = ActionServer()
     rospy.spin()

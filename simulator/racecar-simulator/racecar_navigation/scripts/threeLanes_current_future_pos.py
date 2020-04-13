@@ -25,14 +25,14 @@ class LanesInfo:
         self.futureLanesInfo.map_array = self.which_lane(self.futurePosition)
         h = self.futureLanesInfo.header
         h.stamp = rospy.Time.now()
-        pub1.publish(futureLanesInfo)
+        pub1.publish(self.futureLanesInfo)
 
     def current_pos(self, msg):
         self.currentPosition = msg.pose.pose.position
-        self.currentLanesInfo = self.which_lane(self.currentPosition)
+        self.currentLanesInfo.map_array = self.which_lane(self.currentPosition)
         h = self.currentLanesInfo.header
         h.stamp = rospy.Time.now()
-        pub2.publish(currentLanesInfo)
+        pub2.publish(self.currentLanesInfo)
 
     def which_lane(self, position):
         x_pos = position.x
@@ -67,7 +67,7 @@ def listener():
     rospy.init_node('threeLanes_current_future_pos', anonymous=True)
     L = LanesInfo()
     rospy.Subscriber("move_base/TrajectoryPlannerROS/local_plan", Path, L.future_pos)
-    rospy.Subscriber("vesc/pf/pose/odom", Odometry, L.current_pos)
+    rospy.Subscriber("/vesc/odom", Odometry, L.current_pos)
     rospy.spin()
 
 if __name__ == '__main__':

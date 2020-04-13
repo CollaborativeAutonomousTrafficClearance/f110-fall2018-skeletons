@@ -8,16 +8,16 @@ from racecar_navigation.msg import Lanes_Info
 from racecar_navigation.msg import BoolWithHeader, Nav_Action
 import message_filters
 
-pub = rospy.Publisher('move_car/nav/chosen_action', Nav_Action, queue_size=1)
+pub = rospy.Publisher('move_car/nav/chosen_action', Nav_Action, queue_size=20)
 
 def chosenAction(future_LaneInfo, current_LaneInfo):
     final_action = Nav_Action()
     h = final_action.header
     h.stamp = rospy.Time.now()
-    if future_LaneInfo.array[1] == current_LaneInfo.array[1]:
+    if future_LaneInfo.map_array[1] == current_LaneInfo.map_array[1]:
         final_action.control_action = 0
         pub.publish(final_action)
-    elif future_LaneInfo[1] > current_LaneInfo[1]:
+    elif future_LaneInfo.map_array[1]  > current_LaneInfo.map_array[1]:
         final_action.control_action = 1
         pub.publish(final_action)
     else:
