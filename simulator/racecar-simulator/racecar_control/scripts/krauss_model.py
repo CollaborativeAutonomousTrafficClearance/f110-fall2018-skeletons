@@ -8,8 +8,8 @@ class KraussModel:
     def __init__(self):
         
         self.t_r = 1 # estimated driver reaction time ~ 1 sec
-        self.max_vel = 1 # maximum ego vehicle velocity allowed ##################prm rospy.get_param('robot_num')
-        self.max_acc = 0.2 # maximum ego vehicle acceleration allowed ##############prm
+        self.max_vel = 1 # maximum ego vehicle velocity allowed ################## rospy.get_param('')
+        self.max_acc = 0.2 # maximum ego vehicle acceleration allowed ############## rospy.get_param('')
         self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used
 
         self.vel = 0 # ego vehicle current velocity
@@ -110,7 +110,7 @@ class KraussModel:
 if __name__ == '__main__':
     rospy.init_node('krauss_model')
 
-    # create object from class KraussModel
+    # create object of class KraussModel
     km = KraussModel()
 
     # subscribe to '/vesc/odom'

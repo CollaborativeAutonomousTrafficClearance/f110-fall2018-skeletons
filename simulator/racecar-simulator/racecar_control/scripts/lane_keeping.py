@@ -529,7 +529,7 @@ if __name__ == '__main__':
     rospy.Subscriber('/vesc/odom', Odometry, lk.odometryCallback, queue_size=1)
     # subscribe to '/camera/image_raw'
     rospy.Subscriber('/camera/image_raw', Image, lk.imageCallback)
-    # subscribe to '/camera/image_raw'
+    # subscribe to '/desired_vel'
     rospy.Subscriber('/desired_vel', Float32, lk.velCallback)
 
     rospy.spin()
