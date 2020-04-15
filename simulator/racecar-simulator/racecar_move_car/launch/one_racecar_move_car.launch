@@ -44,18 +44,11 @@
     </include>
 
 
-    <!--The Move Base Node-->
-    <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
+    <!--The Move Car Node-->
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
       <arg name="r_name" value="$(arg r_name)"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     </include>
-
-
-    <!--Following Navigation Goals-->
-    <node pkg="racecar_navigation" type="move_base_follower.py" name="move_base_follower" output="screen">
-          <remap from="/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)/ackermann_cmd_mux/input/teleop"/>
-          <remap from="/cmd_vel" to="$(arg r_name)/cmd_vel"/>
-    </node>
 
 
     <!--Rviz Node-->

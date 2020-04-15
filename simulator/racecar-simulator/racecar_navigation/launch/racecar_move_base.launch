@@ -28,29 +28,5 @@
         <rosparam param="/$(arg r_name)/move_base/TebLocalPlannerROS/odom_topic" subst_value="True">$(arg vesc_ns)/odom</rosparam>
     </node>
 
-    <node pkg="racecar_navigation" type="threeLanes_current_future_pos.py" name="threeLanes_current_future_pos" output="screen" ns="/$(arg r_name)">
-    <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
-    </node>
-    
-    <node pkg="racecar_navigation" type="chosen_nav_action.py" name="chosen_nav_action" output="screen" ns="/$(arg r_name)"/>
-    <node pkg="racecar_navigation" type="isGoalReached.py" name="isGoalReached" output="screen" ns="/$(arg r_name)">
-    <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
-    </node>
-    
-    <!--<node pkg="racecar_navigation" type="action_client_LaneKeeping.py" name="action_client_LaneKeeping" output="screen" ns="/$(arg r_name)">-->
-
-    <!--<node pkg="racecar_navigation" type="action_server_LaneKeeping.py" name="action_server_LaneKeeping" output="screen" ns="/$(arg r_name)">
-    <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
-    <remap from="/camera/image_raw" to="/$(arg r_name)/camera/image_raw"/>
-    <remap from="/drive_parameters" to="/$(arg r_name)/drive_parameters"/>
-    </node>-->
-    
-    <node pkg="racecar_move_car" type="move_car_client.py" name="move_car_client" output="screen" ns="/$(arg r_name)"/>
-
-    <!-- drive_param to servo node -->
-    <node pkg="racecar_control" type="drive_param_to_servo.py" name="drive_param_to_servo" output="screen" ns="/$(arg r_name)">
-    <remap from="/vesc/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)/ackermann_cmd_mux/input/teleop"/>
-    <remap from="/drive_parameters" to="/$(arg r_name)/drive_parameters"/>
-    </node>
 
 </launch>

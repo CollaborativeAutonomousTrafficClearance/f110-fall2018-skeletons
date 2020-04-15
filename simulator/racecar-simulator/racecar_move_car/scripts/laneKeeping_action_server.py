@@ -2,7 +2,7 @@
 
 import rospy
 import actionlib
-from racecar_navigation.msg import  LaneKeepAction, LaneKeepFeedback, LaneKeepResult
+from racecar_move_car.msg import  MoveCarGoal, MoveCarAction
 
 #Lane keeping imports
 from racecar_control.msg import drive_param
@@ -16,7 +16,7 @@ import os
 import roslib
 roslib.load_manifest('racecar_navigation')
 import sys
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -449,35 +449,52 @@ def stanleyController(path_points, velocity, yaw):
 ##------------------------------------------------------------------------------------------##
 class LaneKeeping:
     def __init__(self):
-        
+
+        self.active = 0 # boolean to indicate if lane keeping is requested 
+
+        self.velocity =  0 # lane keeping velocity of vehicle (m/s)
+
         self.yaw = 0 # vehicle's yaw
-        self.velocity =  0.15 # constant velocity of vehicle (m/s)
-        self.pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
+
+        self.pub = rospy.Publisher('drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
 
         self.line_lt = Line()         # line on the left of the lane
         self.line_rt = Line()         # line on the right of the lane
 
+    def velCallback(self, velMsg):
+        '''
+        Sets the vehicle's desired velocity (if lane keeping is requested)
+        
+        :param odomMsg: the float32 message sent through the topic: '/desired_vel'
+        '''
+
+        if (self.active == 1):
+        	self.velocity = velMsg.data
+
+
     def odometryCallback(self, odomMsg):
         '''
-        Extracts the vehicle's current yaw from the current Odometry message
+        Extracts the vehicle's current yaw from the current Odometry message (if lane keeping is requested)
         
         :param odomMsg: the Odometry message sent through the topic: '/vesc/odom'
         '''
 
-        # extract the vehicle's current orientation in the form of a quaternion
-        orientation_q = odomMsg.pose.pose.orientation
-        orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
+        if (self.active == 1):
+		# extract the vehicle's current orientation in the form of a quaternion
+		orientation_q = odomMsg.pose.pose.orientation
+		orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
 
-        # transform from a quaternion to euler angles
-        (r, p, y) = euler_from_quaternion (orientation_list)
+		# transform from a quaternion to euler angles
+		(r, p, y) = euler_from_quaternion (orientation_list)
 
-        # extract the vehicle's yaw
-        self.yaw = y
+		# extract the vehicle's yaw
+		self.yaw = y
+
 
     def imageCallback(self, rosImg):
         '''
 
-        Using Stanley controller, publishes (on the topic '/drive_parameters') the vehicle's 
+        Using Stanley controller (if lane keeping is requested), publishes (on the topic '/drive_parameters') the vehicle's 
         drive_param message (velocity and steering angle) necessary for keeping the lane by 
         means of following the waypoints calculated after applying computer vision techniques 
         on the input image from the vehicle's camera
@@ -485,92 +502,100 @@ class LaneKeeping:
         :param rosImg: the ROS image obtained from the vehicle's camera through the topic: '/camera/image_raw'
         '''
 
-        # change the input ROS image into a CV image to apply the computer vision algorithm on
-        bridge = CvBridge()
-        cv_img = bridge.imgmsg_to_cv2(rosImg, "mono8") # encoding "mono8" used since the input ROS image is b&w (format L8)
-        cv_img = cv_img.astype(np.float64) # change type to float64
-        cv_img = np.dstack((cv_img, cv_img, cv_img))  # 3D image
+        if (self.active == 1):
+		# change the input ROS image into a CV image to apply the computer vision algorithm on
+		bridge = CvBridge()
+		cv_img = bridge.imgmsg_to_cv2(rosImg, "mono8") # encoding "mono8" used since the input ROS image is b&w (format L8)
+		cv_img = cv_img.astype(np.float64) # change type to float64
+		cv_img = np.dstack((cv_img, cv_img, cv_img))  # 3D image
 
-        #cv2.imwrite(r"home/nadine/tmp/cv_img.jpg", cv_img)
-        #cv2.imshow("frame",np.array(cv_img, dtype = np.uint8))
-        #np.save(r"home/nadine/tmp/testarray.npy", cv_img)
-        #h,w=cv_img.shape[:2]
+		#cv2.imwrite(r"home/nadine/tmp/cv_img.jpg", cv_img)
+		#cv2.imshow("frame",np.array(cv_img, dtype = np.uint8))
+		#np.save(r"home/nadine/tmp/testarray.npy", cv_img)
+		#h,w=cv_img.shape[:2]
 
-        # preprocess image and get bird's eye view
-        img_birdeye,img_birdeye_binary,xpos,ypos,x_px_centric,y_px_centric,Minv=img_preprocess(cv_img,debug_lines)
+		# preprocess image and get bird's eye view
+		img_birdeye,img_birdeye_binary,xpos,ypos,x_px_centric,y_px_centric,Minv=img_preprocess(cv_img,debug_lines)
 
-        # get starting positions of left lane and right lane in non-robot centric pixel coordinates
-        leftx_base_x,rightx_base_x= get_left_and_right_peaks(img_birdeye_binary)
+		# get starting positions of left lane and right lane in non-robot centric pixel coordinates
+		leftx_base_x,rightx_base_x= get_left_and_right_peaks(img_birdeye_binary)
 
-        # get line fit coefficients for left and right line from binary thresholded image
-        left_fit_pixel, right_fit_pixel, self.line_lt, self.line_rt=get_line_fits_from_sliding_window(img_birdeye,xm_per_pix,ym_per_pix, leftx_base_x, rightx_base_x, xpos, ypos,x_px_centric, y_px_centric,\
-                                self.line_lt, self.line_rt, n_windows=25, verbose=verbose)
+		# get line fit coefficients for left and right line from binary thresholded image
+		left_fit_pixel, right_fit_pixel, self.line_lt, self.line_rt=get_line_fits_from_sliding_window(img_birdeye,xm_per_pix,ym_per_pix, leftx_base_x, rightx_base_x, xpos, ypos,x_px_centric, y_px_centric,\
+		                        self.line_lt, self.line_rt, n_windows=25, verbose=verbose)
 
-        # get way points in meters
-        distances_to_get_waypoints_at=np.array([2.06,3.06,4.06]) #in meters : measured front distance from robot
+		# get way points in meters
+		distances_to_get_waypoints_at=np.array([2.06,3.06,4.06]) #in meters : measured front distance from robot
 
-        wp_x,wp_y=get_waypoint_from_fit(distances_to_get_waypoints_at,left_fit_pixel,right_fit_pixel,\
-                    ym_per_pix,xm_per_pix,in_meter=True)
+		wp_x,wp_y=get_waypoint_from_fit(distances_to_get_waypoints_at,left_fit_pixel,right_fit_pixel,\
+		            ym_per_pix,xm_per_pix,in_meter=True)
 
-        rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
-        rospy.loginfo(wp_y)
+		rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
+		rospy.loginfo(wp_y)
 
-        path_points = [((wp_x[0]),(wp_y[0]),(float(0.05))), ((wp_x[1]),(wp_y[1]),(0.05)), ((wp_x[2]),(wp_y[2]),(0.05))] # the three generated waypoints
+		path_points = [((wp_x[0]),(wp_y[0]),(float(0.05))), ((wp_x[1]),(wp_y[1]),(0.05)), ((wp_x[2]),(wp_y[2]),(0.05))] # the three generated waypoints
 
-        # apply the Stanley controller
-        angle = stanleyController(path_points, self.velocity, self.yaw)
+		# apply the Stanley controller
+		angle = stanleyController(path_points, self.velocity, self.yaw)
 
-        # publish the drive_param message
-        msg = drive_param()
-        msg.velocity = self.velocity
-        msg.angle = angle
-        self.pub.publish(msg)
+		# publish the drive_param message
+		msg = drive_param()
+		msg.velocity = self.velocity
+		msg.angle = angle
+		self.pub.publish(msg)
 
 
-##__________________________________________________________________________________________##
-##__________________________________________________________________________________________##
-##__________________________________________________________________________________________##
-##                           A C T I O N   M O D U L E                                      ##
-##__________________________________________________________________________________________##
-##__________________________________________________________________________________________##
-##__________________________________________________________________________________________##
+##------------------------------------------------------------------------------------------##
+##------------------------------------------------------------------------------------------##
+##------------------------------------------------------------------------------------------##
+##            L A N E    K E E P I N G    A C T I O N    S E R V E R    C L A S S           ##
+##------------------------------------------------------------------------------------------##
+##------------------------------------------------------------------------------------------##
+##------------------------------------------------------------------------------------------##
 
-class ActionServer():
+class LKActionServer():
+
     def __init__(self):
-        self.a_server = actionlib.SimpleActionServer("Lane_Keep_as", LaneKeepAction, execute_cb = self.execute_cb, auto_start = False )
+
+        self.a_server = actionlib.SimpleActionServer("laneKeeping_action_server", MoveCarAction, self.execute_cb, False)
         self.a_server.start()
+        self.lk = LaneKeeping() # object of class LaneKeeping
     
+    # Goal callback function; goal is a MoveCarAction message
     def execute_cb(self, goal):
         
-        success = True
-        result = LaneKeepResult()
-        feedback = LaneKeepFeedback()
-        
-        if (goal.lane_keep == True):
-            if self.a_server.is_preempt_requested():
-                rospy.loginfo("preempted")
-                success = False
-                self.a_server.set_preempted()
-                
+        rospy.loginfo("Received goal in lane keeping action server")
 
-            # create object from class LaneKeeping
-            lk = LaneKeeping()
+        # Extra check that lane keeping is requested
+        if (goal.mcGoal.control_action == 0):
 
-            rospy.Subscriber('/vesc/odom', Odometry, lk.odometryCallback, queue_size=1)
-            # subscribe to '/camera/image_raw'
-            rospy.Subscriber('/camera/image_raw', Image, lk.imageCallback)
+	    self.lk.active = 1
+            rate = rospy.Rate(1)
 
-            #feedback.feedback = 1      #temporary until it needs to be set
-            #result.result = True
-            #rate.sleep()
-            #rospy.spin()
-        
+            rospy.loginfo("Executing goal in lane keeping action server")
 
-        if success:
-            self.a_server.set_succeeded(result)
+            while(1):
+                # check that preempt has not been requested by the client
+                if self.a_server.is_preempt_requested():
+		    self.lk.active = 0
+                    rospy.loginfo("Goal preempted in lane keeping action server")
+                    self.a_server.set_preempted() #########send result?
+                    break
 
+                rate.sleep()
     
 
 if __name__ == "__main__":
-    s = ActionServer()
+    rospy.init_node("laneKeeping_action_server")
+
+    # create object of class LKActionServer
+    lkas = LKActionServer()
+
+    # subscribe to '/vesc/odom'
+    rospy.Subscriber('/vesc/odom', Odometry, lkas.lk.odometryCallback, queue_size=1)
+    # subscribe to 'camera/image_raw'
+    rospy.Subscriber('camera/image_raw', Image, lkas.lk.imageCallback)
+    # subscribe to 'move_car/desired_lk_vel'
+    rospy.Subscriber('move_car/desired_lk_vel', Float32, lkas.lk.velCallback)
+
     rospy.spin()

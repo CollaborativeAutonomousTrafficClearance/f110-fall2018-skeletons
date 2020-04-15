@@ -5,13 +5,13 @@ from nav_msgs.msg import Path
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
 from racecar_navigation.msg import Lanes_Info
-from racecar_navigation.msg import BoolWithHeader, Nav_Action
+from racecar_navigation.msg import BoolWithHeader, NavAction
 import message_filters
 
-pub = rospy.Publisher('move_car/nav/chosen_action', Nav_Action, queue_size=20)
+pub = rospy.Publisher('move_car/nav/chosen_action', NavAction, queue_size=20)
 
 def chosenAction(future_LaneInfo, current_LaneInfo):
-    final_action = Nav_Action()
+    final_action = NavAction()
     h = final_action.header
     h.stamp = rospy.Time.now()
     if future_LaneInfo.map_array[1] == current_LaneInfo.map_array[1]:

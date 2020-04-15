@@ -55,7 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   MoveCarGoal.msg
+   Goal.msg
    #custom.msg
  )
 
@@ -69,7 +69,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate actions in the 'action' folder
  add_action_files(
    FILES
-   Move_Car.action
+   MoveCar.action
 #   Action2.action
  )
 

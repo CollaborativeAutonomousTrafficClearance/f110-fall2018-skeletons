@@ -1,0 +1,52 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="r_name" default="racecar"/>
+    <arg name="vesc_ns" default="/vesc"/>
+
+
+    <!--The move base node-->
+    <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
+      <arg name="r_name" value="$(arg r_name)"/>
+      <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+    </include>
+
+    
+    <!-- Determine current and desired future lanes of racecar -->
+    <node pkg="racecar_navigation" type="threeLanes_current_future_pos.py" name="threeLanes_current_future_pos" output="screen" ns="/$(arg r_name)">
+       <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
+    </node>
+    
+
+    <!-- Determine the required navigation action -->
+    <node pkg="racecar_navigation" type="chosen_nav_action.py" name="chosen_nav_action" output="screen" ns="/$(arg r_name)"/>
+
+
+    <!-- Determine whether goal has been reached -->
+    <node pkg="racecar_navigation" type="isGoalReached.py" name="isGoalReached" output="screen" ns="/$(arg r_name)">
+       <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
+    </node>
+    
+
+    <!-- The move car action client node -->
+    <node pkg="racecar_move_car" type="move_car_action_client.py" name="move_car_action_client" output="screen" ns="/$(arg r_name)"/>
+
+
+    <!-- The move car lane keeping action server node -->
+    <node pkg="racecar_move_car" type="laneKeeping_action_server.py" name="laneKeeping_action_server" output="screen" ns="/$(arg r_name)">
+      <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
+    </node>
+    
+
+    <!-- The move car lane keeping velocity action server node -->
+    <node pkg="racecar_move_car" type="laneKeeping_vel_action_server.py" name="laneKeeping_vel_action_server" output="screen" ns="/$(arg r_name)">
+      <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
+    </node>
+
+    <!-- The drive_param to servo node -->
+    <node pkg="racecar_control" type="drive_param_to_servo.py" name="drive_param_to_servo" output="screen" ns="/$(arg r_name)">
+       <remap from="/vesc/ackermann_cmd_mux/input/teleop" to="$(arg vesc_ns)/ackermann_cmd_mux/input/teleop"/>
+       <remap from="/drive_parameters" to="/$(arg r_name)/drive_parameters"/>
+    </node>
+
+</launch>
