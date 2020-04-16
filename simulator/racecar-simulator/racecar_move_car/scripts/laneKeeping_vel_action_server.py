@@ -159,7 +159,7 @@ class VelActionServer():
 
     def __init__(self):
 
-        self.a_server = actionlib.SimpleActionServer("laneKeeping_vel_action_server", MoveCarAction, self.execute_cb, False)
+        self.a_server = actionlib.SimpleActionServer("move_car/laneKeeping_vel_action_server", MoveCarAction, self.execute_cb, False)
         self.a_server.start()
         self.result = MoveCarResult()
 

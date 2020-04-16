@@ -64,7 +64,7 @@ class laneKeepingClient(baseClient):
     def __init__(self):
         rospy.loginfo("Inside the lk client")
 
-        actionName = "laneKeeping_action_server"
+        actionName = "move_car/laneKeeping_action_server"
         baseClient.__init__(self, actionName)
 
         #self.current_goal.mcGoal.control_action = 0  # 0:= Lane Keeping
@@ -77,7 +77,7 @@ class velocityClient(baseClient):
     def __init__(self):
         rospy.loginfo("Inside the vel client")
 
-        self.actionName = 'laneKeeping_vel_action_server'
+        self.actionName = 'move_car/laneKeeping_vel_action_server'
         baseClient.__init__(self, self.actionName)
 
         #self.current_goal.mcGoal.control_action = 0  # 0:= Lane Keeping
@@ -103,7 +103,7 @@ class laneChangeClient(baseClient):
     def __init__(self):
         rospy.loginfo("Inside the lc client")
 
-        self.actionName = 'laneChange_action_server'
+        self.actionName = 'move_car/laneChange_action_server'
         baseClient.__init__(self, self.actionName)
 
         #self.direction = 0 #####################

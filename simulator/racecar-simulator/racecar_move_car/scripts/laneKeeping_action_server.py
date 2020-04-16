@@ -557,7 +557,7 @@ class LKActionServer():
 
     def __init__(self):
 
-        self.a_server = actionlib.SimpleActionServer("laneKeeping_action_server", MoveCarAction, self.execute_cb, False)
+        self.a_server = actionlib.SimpleActionServer("move_car/laneKeeping_action_server", MoveCarAction, self.execute_cb, False)
         self.a_server.start()
         self.lk = LaneKeeping() # object of class LaneKeeping
     
