@@ -147,13 +147,13 @@ class nav_master(action_source):
             rospy.loginfo("Cannot call a new service, Lane change is still unfinished")
         
         rospy.loginfo("Inside call server ")
-        if self.last_chosen_action != self.chosen_action.control_action:
+        if self.last_chosen_action != self.chosen_action.control_action or self.last_chosen_action == self.chosen_action.control_action  :
             rospy.loginfo("Inside call server, if condition")
             if self.chosen_action.control_action == 0:
                 #Setting lane keeping client goal
                 self.lk_client.current_goal.mcGoal.header.stamp = rospy.Time.now()
                 self.lk_client.send_new_goal(self.lk_client.current_goal)
-            
+                rospy.loginfo("goal sent")
                 #Setting velocity client goal
                 self.vel_client.current_goal.mcGoal.header.stamp = rospy.Time.now()
                 self.vel_client.current_goal.mcGoal.speed = -1  #Undefined for this action source
