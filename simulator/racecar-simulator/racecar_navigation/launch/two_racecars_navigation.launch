@@ -9,16 +9,18 @@
     <arg name="vesc_ns" default="/vesc"/>
 
     <arg name="r_type1" default="racecar"/>
-    <arg name="x_pos1" default="-50"/>
-    <arg name="y_pos1" default="-0.2625"/>
+    <arg name="x_pos1" default="-5"/>
+    <arg name="y_pos1" default="0.2625"/>
     <arg name="z_pos1" default="0.05"/>
     <arg name="ctrl_method1" default=""/>
 
     <arg name="r_type2" default="racecar"/>
-    <arg name="x_pos2" default="-30"/>
-    <arg name="y_pos2" default="-0.2625"/>
+    <arg name="x_pos2" default="5"/>
+    <arg name="y_pos2" default="-0.7875"/>
     <arg name="z_pos2" default="0.05"/>
     <arg name="ctrl_method2" default=""/>
+
+    <arg name="use_comm_layer" default="true"/>
 
 
     <!--Launching Gazebo With The Racecar-->
@@ -65,11 +67,13 @@
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)1"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)2"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)2"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
 

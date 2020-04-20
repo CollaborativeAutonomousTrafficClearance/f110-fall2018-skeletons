@@ -32,6 +32,7 @@
     <arg name="z_pos4" default="0.05"/>
     <arg name="ctrl_method4" default=""/>
 
+    <arg name="use_comm_layer" default="true"/>
 
     <!--Launching Gazebo With The Racecars-->
     <include file="$(find racecar_gazebo)/launch/four_racecars.launch">
@@ -95,21 +96,25 @@
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)1"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)2"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)2"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)3"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)3"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)4"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)4"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
 

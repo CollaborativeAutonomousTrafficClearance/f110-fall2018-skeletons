@@ -48,6 +48,7 @@
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+      <arg name="use_comm_layer" value="false"/>
     </include>
 
 
