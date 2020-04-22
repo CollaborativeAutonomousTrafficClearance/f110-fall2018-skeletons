@@ -9,7 +9,10 @@ project(racecar_qlearning)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   rospy
+  roscpp
   std_msgs
+  genmsg
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -48,8 +51,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   RL_Policy_Action.msg
-#   Message2.msg
+   RLPolicyAction.msg
+   #Message2.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -69,7 +72,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   std_msgs  # Or other packages containing msgs
+   std_msgs
  )
 
 ################################################
@@ -102,9 +105,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES racecar_qlearning
-#  CATKIN_DEPENDS other_catkin_pkg
+  #INCLUDE_DIRS include
+  #LIBRARIES racecar_qlearning
+  #CATKIN_DEPENDS rospy std_msgs
   DEPENDS message_runtime
 )
 
@@ -116,7 +119,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
-# ${catkin_INCLUDE_DIRS}
+  ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library

@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
 import rospy
+import actionlib
+from racecar_navigation.msg import  BoolWithHeader, Lanes_Info, Nav_Action
+from racecar_move_car.msg import MoveCarGoal, Move_CarAction, Move_CarGoal, Move_CarResult, Move_CarFeedback
+
+#Lane keeping imports
 from racecar_control.msg import drive_param
+
 from nav_msgs.msg import Odometry
 import math
 import numpy as np
@@ -9,14 +15,25 @@ from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import os 
 
 import roslib
-roslib.load_manifest('racecar_control')
+roslib.load_manifest('racecar_move_car')
 import sys
-from std_msgs.msg import String, Float32
+from std_msgs.msg import String
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 
 import cv2
 import collections
+#Lane keeping imports
+
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+##                      L A N E K E E P I N G   M O D U L E                                 ##
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+
+
 
 ##------------------------------------------------------------------------------------------##
 ##------------------------------------------------------------------------------------------##
@@ -435,20 +452,11 @@ class LaneKeeping:
     def __init__(self):
         
         self.yaw = 0 # vehicle's yaw
-        self.velocity =  0.3 # velocity of vehicle (m/s)
+        self.velocity =  0.15 # constant velocity of vehicle (m/s)
         self.pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
 
         self.line_lt = Line()         # line on the left of the lane
         self.line_rt = Line()         # line on the right of the lane
-
-    def velCallback(self, velMsg):
-        '''
-        Sets the vehicle's desired velocity
-        
-        :param odomMsg: the float32 message sent through the topic: '/desired_vel'
-        '''
-        self.velocity = velMsg.data
-
 
     def odometryCallback(self, odomMsg):
         '''
@@ -505,8 +513,8 @@ class LaneKeeping:
         wp_x,wp_y=get_waypoint_from_fit(distances_to_get_waypoints_at,left_fit_pixel,right_fit_pixel,\
                     ym_per_pix,xm_per_pix,in_meter=True)
 
-        ##rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
-        ##rospy.loginfo(wp_y)
+        rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
+        rospy.loginfo(wp_y)
 
         path_points = [((wp_x[0]),(wp_y[0]),(float(0.05))), ((wp_x[1]),(wp_y[1]),(0.05)), ((wp_x[2]),(wp_y[2]),(0.05))] # the three generated waypoints
 
@@ -518,18 +526,54 @@ class LaneKeeping:
         msg.velocity = self.velocity
         msg.angle = angle
         self.pub.publish(msg)
+
+
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+##                           A C T I O N   M O D U L E                                      ##
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+##__________________________________________________________________________________________##
+
+class ActionServer():
+    def __init__(self):
+        self.a_server = actionlib.SimpleActionServer("move_car/laneKeeping_action_server", Move_CarAction, execute_cb = self.execute_cb, auto_start = False )
+        self.a_server.start()
+        self.current_goal = Move_CarGoal()
+        self.current_result = Move_CarResult()
+        self.current_feedback = Move_CarFeedback()
+        self.success = False
     
-if __name__ == '__main__':
-    rospy.init_node('lane_keeping')
+    def execute_cb(self, goal):
+        
+        self.success = True
+        self.current_goal = goal
+        rospy.loginfo("goal recieved")
+        if self.a_server.is_preempt_requested():
+                rospy.loginfo("preempted")
+                success = False
+                self.a_server.set_preempted()
+        self.execute()
+        
+    def execute(self):
+            if (self.current_goal.mcGoal.direction == -1):
+                rospy.loginfo("start lane keeping")
+                lk = LaneKeeping()
 
-    # create object from class LaneKeeping
-    lk = LaneKeeping()
+                rospy.Subscriber('/vesc/odom', Odometry, lk.odometryCallback, queue_size=1)
+                # subscribe to '/camera/image_raw'
+                rospy.Subscriber('/camera/image_raw', Image, lk.imageCallback)
+                self.current_feedback.mcFeedback = 1
+                self.current_result.mcResult = 1
+                self.success = True
+            
+            if self.success:
+                self.a_server.set_succeeded(self.current_result)
+            
 
-    # subscribe to '/vesc/odom'
-    rospy.Subscriber('/vesc/odom', Odometry, lk.odometryCallback, queue_size=1)
-    # subscribe to '/camera/image_raw'
-    rospy.Subscriber('/camera/image_raw', Image, lk.imageCallback)
-    # subscribe to '/desired_vel'
-    rospy.Subscriber('/desired_vel', Float32, lk.velCallback)
 
+if __name__ == "__main__":
+    rospy.init_node("lane_keeping_server")
+    s = ActionServer()
     rospy.spin()

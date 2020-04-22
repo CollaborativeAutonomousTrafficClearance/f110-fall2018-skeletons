@@ -55,8 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   MoveCarGoal.msg
-   #custom.msg
+   Goal.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -69,8 +68,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate actions in the 'action' folder
  add_action_files(
    FILES
-   Move_Car.action
-#   Action2.action
+   MoveCar.action
  )
 
 ## Generate added messages and services with any dependencies listed here

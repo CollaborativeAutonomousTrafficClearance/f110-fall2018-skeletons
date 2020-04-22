@@ -6,7 +6,7 @@ from geometry_msgs.msg import Point, Pose, Quaternion, Twist, Vector3
 from nav_msgs.msg import Path, Odometry
 from racecar_navigation.msg import Lanes_Info
 
-#This node publishes information about current and future lane from move_base
+#This node publishes information about current and future lanes from move_base
 
 pub1 = rospy.Publisher('move_car/nav/current_laneInfo', Lanes_Info, queue_size=10)
 pub2 = rospy.Publisher('move_car/nav/future_laneInfo', Lanes_Info, queue_size=10)
