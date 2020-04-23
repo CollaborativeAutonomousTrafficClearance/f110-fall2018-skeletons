@@ -57,6 +57,7 @@ protected:
   dynamic_reconfigure::Server<costmap_2d::GenericPluginConfig> *dsrv_;
 
   std::string global_frame_;  //@brief The global frame for the costmap
+  bool rolling_window_; //@brief Whether the layered costmap is rolling or not
 
 
 private:

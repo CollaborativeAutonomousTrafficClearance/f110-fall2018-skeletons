@@ -27,4 +27,5 @@ local_costmap:
   plugins:
    - {name: static_layer,        type: "costmap_2d::StaticLayer"}
    - {name: obstacle_layer,      type: "costmap_2d::ObstacleLayer"}
+   - {name: communication_layer,     type: "costmap_2d::CommunicationLayer"}
 

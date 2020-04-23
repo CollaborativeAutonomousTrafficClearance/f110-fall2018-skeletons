@@ -20,6 +20,7 @@ void CommunicationLayer::onInitialize()
 {
   ros::NodeHandle nh("~/" + name_), g_nh;
   current_ = true;
+  rolling_window_ = layered_costmap_->isRolling();
 
   // Specify the default cost of the costmap layer cells to be NO_INFORMATION
   default_value_ = NO_INFORMATION;
@@ -28,10 +29,10 @@ void CommunicationLayer::onInitialize()
   CommunicationLayer::matchSize();
 
   // Initialization of the min and max of last x and y bounds as well as the safety clearing variable
-  last_min_x_ = 1000;
-  last_min_y_ = 1000; 
-  last_max_x_ = -1000;
-  last_max_y_ = -1000;
+  last_min_x_ = std::numeric_limits<float>::max();
+  last_min_y_ = std::numeric_limits<float>::max(); 
+  last_max_x_ = -std::numeric_limits<float>::max();
+  last_max_y_ = -std::numeric_limits<float>::max();
   safety_clearing = 1.5;
 
   // Print global frame
@@ -87,10 +88,10 @@ void CommunicationLayer::markCurrentFootprints()
 {
 
   // Initialize the current min and max of x and y
-  curr_min_x_ = 1000;
-  curr_min_y_ = 1000;
-  curr_max_x_ = -1000;
-  curr_max_y_ = -1000;
+  curr_min_x_ = std::numeric_limits<float>::max();
+  curr_min_y_ = std::numeric_limits<float>::max();
+  curr_max_x_ = -std::numeric_limits<float>::max();
+  curr_max_y_ = -std::numeric_limits<float>::max();
 
   // For each of the current footprints
   for (int i = 0; i < lastFootprintsCombined.footprints.size(); i++) 
@@ -164,6 +165,12 @@ void CommunicationLayer::updateBounds(double robot_x, double robot_y, double rob
   // Return if this layer is not enabled
   if (!enabled_)
     return;
+
+  // Upate origin if the layerd costmap is rolling
+  if (rolling_window_)
+  {
+    updateOrigin(robot_x - getSizeInMetersX() / 2, robot_y - getSizeInMetersY() / 2);
+  }
 
   // Clear and mark the appropriate cells in this layer's costmap in order to be able to calculate the required bounds
   clearPreviousFootprints();
