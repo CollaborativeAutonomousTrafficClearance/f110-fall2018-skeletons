@@ -46,7 +46,13 @@ class KraussModel:
 
     # Calculates which lane the ego vehicle is in, assuming we are in the threeLanes world
     def whichLane(self):
-
+        '''  
+     Lane number convention in the "threeLanes" world:
+         y^  
+          |--------------> x      lane number 0 
+          |--------------> x      lane number 1
+          |--------------> x      lane number 2 
+    '''
         if (self.y_pos >= 0):
             self.lane_num = 0;
         elif (self.y_pos < -0.525):
@@ -201,13 +207,13 @@ class VelActionServer():
 
 	    # if action was successfully executed
             if (self.km.active == 0):
-                self.result.result = 1
+                self.result.mcResult = 1
                 rospy.loginfo("Reached goal in lane keeping velocity action server")
                 self.a_server.set_succeeded(self.result)
 
 	    # if action was found to be infeasible
             elif (self.km.active == -1):
-                self.result.result = 0
+                self.result.mcResult = 0
                 rospy.loginfo("Infeasible goal in lane keeping velocity action server")
                 self.a_server.set_aborted(self.result)
 

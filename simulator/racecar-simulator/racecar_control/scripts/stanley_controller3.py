@@ -7,23 +7,52 @@ import math
 import numpy as np
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import os 
+#from uncertainties import ufloat
+#from uncertainties.umath import * 
+#from gazebo_msgs.srv import GetModelState, GetModelStateRequest 
+from std_msgs.msg import Header
 
 #############
 # CONSTANTS #
 #############
 
-VELOCITY = 0.1 # m/s
+VELOCITY = 0.5 # m/s
 
 ###########
 # GLOBALS #
 ###########
 
+awlBool = 0
+tanyBool = 0
+nosBool = 0
+
+
 # waypoints - hard-coded for now
 
-path_points = [(float(-50), float(0.2625), float(0.05)), (float(-49.5), float(0.2625), float(0.05)), (float(-49), float(0.2625), float(0.05))]
+#path_points = [(float(-50), float(-0.2625), float(0.05)),
+# (float(-49.5), float(-0.2625), float(0.05)),
+ # (float(-49), float(-0.2625), float(0.05)),
+  #(float(-48), float(-0.5), float(0.05)),
+   #(float(-48), float(-0.75), float(0.05))]
+
+#path_points = [ (float(-49), float(-0.2625), float(0.05)), 
+ #               (float(-49), float(0.2625), float(0.05)),  
+#                (float(-48.5), float(0.2625), float(0.05))]
+
+
+path_points = [ (float(-50), float(0.2625), float(0.05)), 
+                (float(-49.5), float(0.2625), float(0.05)),  
+                (float(-49), float(0.2625), float(0.05))]
+
        
 # Publisher for 'drive_parameters' (speed and steering angle)
 pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1)
+
+pub_time_start = rospy.Publisher('/myTimeS', Odometry, queue_size=1)
+pub_time_mid = rospy.Publisher('/myTimeM', Odometry, queue_size=1)
+pub_time_finish = rospy.Publisher('/myTimeF', Odometry, queue_size=1)
+
+
 
 
 #############
@@ -66,7 +95,7 @@ def callback(data):
     phi = np.mod(phi + np.pi, 2 * np.pi) - np.pi
 
     # calculate the required steering angle
-    if ((path_points[min_idx][1] - data.pose.pose.position.y) >= 0.15):
+    if ((path_points[min_idx][1] - data.pose.pose.position.y) >= 0.2):
         k = 0.1
     else:
         k = 0.005
@@ -82,6 +111,56 @@ def callback(data):
     msg.velocity = VELOCITY
     msg.angle = angle
     pub.publish(msg)
+
+    checkTIME(data,yaw)
+
+
+
+def checkTimeOlddddddddddddddddddddddd(data,yaw):
+
+    InitandFinPts = [(path_points[0]) , (path_points[2])]
+    uncertainity_error = 0.1
+    if (InitandFinPts[0][0] == ufloat(data.pose.pose.position.x ,uncertainity_error ) and InitandFinPts[0][1] == ufloat(data.pose.pose.position.y, uncertainity_error) ): # initial point 
+        ## start time 
+        #t_i = time.localtime()
+        #start_time = time.strftime("%H:%M:%S", t_i)
+        #print(start_time)
+        pub_time_start.publish(data)
+
+
+    if (InitandFinPts[1][0] == ufloat(data.pose.pose.position.x,uncertainity_error) and InitandFinPts[1][1] == ufloat(data.pose.pose.position.y,uncertainity_error) and yaw <=1e-03 ): # final point 
+        ## end time
+        #t_f = time.localtime()
+        #end_time = time.strftime("%H:%M:%S", t_f)
+        #print(end_time)
+        pub_time_start.publish(data)
+
+
+def checkTIME(data,yaw):
+
+    InitandFinPts = [(path_points[0]) , (path_points[2])]
+
+    global awlBool
+    global tanyBool
+    global nosBool
+
+    if (data.pose.pose.position.x > InitandFinPts[0][0]):
+        if(awlBool == 0):
+            pub_time_start.publish(data)
+            awlBool = 1
+    
+    if (data.pose.pose.position.y >= 0):
+        if(nosBool == 0):
+            pub_time_mid.publish(data)
+            nosBool = 1
+
+    if ((data.pose.pose.position.x > InitandFinPts[1][0]) and (abs(yaw) <= 10e-02)):
+        if(tanyBool == 0):
+            pub_time_finish.publish(data)
+            tanyBool = 1
+
+
+
     
 if __name__ == '__main__':
     rospy.init_node('stanley_controller')

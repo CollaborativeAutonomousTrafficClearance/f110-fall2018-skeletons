@@ -31,6 +31,13 @@ class KraussModel:
 
     # Calculates which lane the ego vehicle is in, assuming we are in the threeLanes world
     def whichLane(self):
+    '''  
+     Lane number convention in the "threeLanes" world:
+         y^  
+          |--------------> x      lane number 0 
+          |--------------> x      lane number 1
+          |--------------> x      lane number 2 
+    '''
 
         if (self.y_pos >= 0):
             self.lane_num = 0;
