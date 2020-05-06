@@ -16,7 +16,7 @@ from std_msgs.msg import Header
 # CONSTANTS #
 #############
 
-VELOCITY = 0.5 # m/s
+VELOCITY = 0.1 # m/s
 
 ###########
 # GLOBALS #
@@ -40,9 +40,15 @@ nosBool = 0
 #                (float(-48.5), float(0.2625), float(0.05))]
 
 
-path_points = [ (float(-50), float(0.2625), float(0.05)), 
-                (float(-49.5), float(0.2625), float(0.05)),  
-                (float(-49), float(0.2625), float(0.05))]
+#path_points = [ (float(-50), float(0.2625), float(0.05)), 
+ #               (float(-49.5), float(0.2625), float(0.05)),  
+  #              (float(-49), float(0.2625), float(0.05))]
+
+
+path_points = [(float(-40), float(-0.7875), float(0.05)),
+               (float(-40+0.5), float(-0.7875), float(0.05)),
+               (float(-40+1), float(-0.7875), float(0.05))]
+            
 
        
 # Publisher for 'drive_parameters' (speed and steering angle)
@@ -95,7 +101,7 @@ def callback(data):
     phi = np.mod(phi + np.pi, 2 * np.pi) - np.pi
 
     # calculate the required steering angle
-    if ((path_points[min_idx][1] - data.pose.pose.position.y) >= 0.2):
+    if (abs((path_points[min_idx][1] - data.pose.pose.position.y)) >= 0.2):
         k = 0.1
     else:
         k = 0.005
