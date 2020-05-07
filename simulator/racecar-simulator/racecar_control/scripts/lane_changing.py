@@ -72,11 +72,7 @@ class LaneChange:
         self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used ################## rospy.get_param('')
         self.del_time = 1 # chosen delta time between iterations ################## rospy.get_param('')
 
-
-        
-
         self.pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
-
 
 
     # Calculates which lane the ego vehicle is in and to which it needs to go, assuming we are in the threeLanes world
@@ -106,8 +102,6 @@ class LaneChange:
     # Determines the required time and vertical distance needed for lane change (based on the vehicle's speed)
     def setLCTimeAndVdist(self):
 
-        # msh betraga3 7aga
-        # set variables: self.lc_time, self.lc_vdist
         if (abs(self.lc_vel - 0.1) <= 0.05):
             self.lc_time = 15
             self.lc_halfTime = 7
@@ -151,13 +145,14 @@ class LaneChange:
 
         safe_vel = lead_vel + ((lead_gap - (lead_vel * self.t_r))/(self.t_r + ((lead_vel + rear_vel)/(2*self.max_acc))))
 
-        max_possible_safe_vel = min(self.max_vel, (rear_vel + self.max_acc*self.del_time), safe_vel)
+        #max_possible_safe_vel = min(self.max_vel, (rear_vel + self.max_acc*self.del_time), safe_vel)
 
-        return max_possible_safe_vel
+        return safe_vel
 
 
     # Checks the feasibility of the required lane change
     def isLCFeasible(self):
+
         # if there are no other vehicles around the ego vehicle, then indicate that lane change is feasible
         if (self.isAlone):
             return True
@@ -182,18 +177,21 @@ class LaneChange:
 
     # Determines which vehicles are in the position of the A, B or D vehicles (if any)
     def getVehiclesABD(self):
-        # betraga3 bool
-        # bt set self.vehicle_A, self.vehicle_B, self.vehicle_D
-        # betnadi gowaha isAOrB
-
+        
+        # initialize indices of vehicles A,B and D with -1 (to be updated below)
         tempA = -1
         tempB = -1
         tempD = -1
-
+        
+        # loop on vehicles in my_vehicle_ids list
         for i in range(0,len(self.my_vehicle_ids.ids),1):
+
+            # check for vehicle D (leading in ego vehicle current lane) 
             if ((self.my_vehicle_ids.ids[i].lane_num == self.curr_lane) and (self.my_vehicle_ids.ids[i].x_position >= self.my_x_pos)):
                 if ((tempD == -1) or (self.my_vehicle_ids.ids[i].x_position < self.my_vehicle_ids.ids[tempD].x_position)):
                     tempD = i
+            
+            # check for vehicles A or B (in ego vehicle to go lane) 
             elif (self.my_vehicle_ids.ids[i].lane_num == self.to_go_lane):
                 result = self.isAOrB(i)
                 if (result == 0):
@@ -208,30 +206,32 @@ class LaneChange:
         self.vehicle_A = tempA
         self.vehicle_B = tempB
         self.vehicle_D = tempD
-        rospy.loginfo("A: ")
-        rospy.loginfo(tempA)
-        rospy.loginfo("B: ")
-        rospy.loginfo(tempB)
-        rospy.loginfo("D: ")
-        rospy.loginfo(tempD)
+        rospy.loginfo("Found vehicle A at index: %d",tempA)
+        rospy.loginfo("Found vehicle B at index: %d",tempB)
+        rospy.loginfo("Found vehicle D at index: %d",tempD)
+
         return True
 
 
     # Determines whether a certain vehicle is in the position of A or B
-    def isAOrB(self, vehicleIndex): ##################### not sure of the input variable
-        # return 0:=infeasible 1:=A 2:=B
+    # Return value: 0:= infeasible 1:= vehicle A 2:= vehicle B
+    def isAOrB(self, vehicleIndex): 
 
+        # calculate center line of lane change trajectory
         lc_centerline = self.lc_halfvdist + self.my_x_pos
-        givenVehicle_initial_POS = self.my_vehicle_ids.ids[vehicleIndex].x_position
-        givenVehicle_initial_VEL = self.my_vehicle_ids.ids[vehicleIndex].velocity
-        #givenVehicle_LANE = self.my_vehicle_ids.ids[vehicleIndex].lane_num
 
-        # Test for B conditions
-        # apply max deceleration during timesteps till the center line. (Before the center line)
+        # calculate number of timesteps taken by ego vehicle to reach centerline 
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
         LCnoOfTS_half = math.ceil(LCnoOfTS_half)
         LCnoOfTS_half = int(LCnoOfTS_half)
-        
+
+        # get the initial positon and velocity for the input vehicle
+        givenVehicle_initial_POS = self.my_vehicle_ids.ids[vehicleIndex].x_position
+        givenVehicle_initial_VEL = self.my_vehicle_ids.ids[vehicleIndex].velocity
+
+        # test if the input vehicle is vehicle B #
+
+        # assume vehicle applies maximum deceleration during all timesteps the ego vehicle takes to reach centerline. (Before the center line)
         hypoth_VEL = givenVehicle_initial_VEL 
         hypoth_POS = givenVehicle_initial_POS 
 
@@ -242,13 +242,18 @@ class LaneChange:
                 hypoth_VEL = temp_VEL
             else:
                 hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + 0) * self.del_time)
-                hypoth_VEL = 0    
+                hypoth_VEL = 0   
+
+        # check if input vehicle is SURELY B
         if (hypoth_POS > lc_centerline):
             return 2
         
-        # Test for A conditions
+        # test if the input vehicle is vehicle A #
+
+        # assume vehicle applies maximum acceleration during all timesteps the ego vehicle takes to reach centerline. (Before the center line)
         hypoth_VEL = givenVehicle_initial_VEL 
-        hypoth_POS = givenVehicle_initial_POS 
+        hypoth_POS = givenVehicle_initial_POS
+
         for i in range(0,LCnoOfTS_half,1):
             temp_VEL = hypoth_VEL + (self.max_acc * self.del_time)
             if (temp_VEL <= self.max_vel):
@@ -258,30 +263,34 @@ class LaneChange:
                 hypoth_POS = hypoth_POS +  (0.5 * (hypoth_VEL + self.max_vel)*self.del_time)
                 hypoth_VEL = self.max_vel
 
+        # check if input vehicle is SURELY A
         if (hypoth_POS < lc_centerline):
             return 1
+        # not sure whether it is SURELY A or B ( it is complicated :( )
         else:
             return 0
 
 
     # Checks if it is safe to lane change given the presence of a vehicle in position A (if any)
     def isSafeWRTA(self): 
-        # Calculate hypothitcal position and velocity of vechicle A after halfTimeofLC.
-        # hypothitcal >> in first halfTimeLC
-        # Final >> in second halfTimeLC
-
+        
+        # return true if there is no vehicle A
         if (self.vehicle_A == -1):
             return True
 
+        # calculate center line of lane change trajectory
         lc_centerline = self.lc_halfvdist + self.my_x_pos
-        vehicle_A_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_A].velocity  # initial velocity of vechicle A
-        vehicle_A_initial_POS = self.my_vehicle_ids.ids[self.vehicle_A].x_position  # initial x_position of vechicle A
+        
+        # get the initial positon and velocity for the vehicle A
+        vehicle_A_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_A].velocity  
+        vehicle_A_initial_POS = self.my_vehicle_ids.ids[self.vehicle_A].x_position  
 
-        # apply max acceleration during timesteps till the center line. (Before the center line)
+        # calculate number of timesteps taken by ego vehicle to reach centerline 
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
         LCnoOfTS_half = math.ceil(LCnoOfTS_half)
         LCnoOfTS_half = int(LCnoOfTS_half)
 
+        # assume vehicle applies maximum acceleration during all timesteps the ego vehicle takes to reach centerline. (Before the center line)
         hypoth_VEL = vehicle_A_initial_VEL 
         hypoth_POS = vehicle_A_initial_POS 
 
@@ -294,45 +303,37 @@ class LaneChange:
                 hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + self.max_vel)*self.del_time)
                 hypoth_VEL = self.max_vel
 
-
-            # END for calc hypothetical vel and pos
-
-        # ego vechicle calcualion in the second halfTimeofLC
-        # Assuming lane change occurs at zero acceleration for the ego vechicle >> s = ut + 0.5*a*t^2
-        """
-        vehicle_ego_final_VEL = self.lc_vel
-        vehicle_ego_final_DIST =  self.lc_vdist
-        vehicle_ego_final_POS = vehicle_ego_final_DIST + self.my_x_pos
-        """
-
-        # Check with kauss
+        # check whether the relative velocity between ego vehicle and vehicle A is safe (using krauss model)
         max_possible_safe_VEL = self.calcMaxSafeVel(hypoth_POS, hypoth_VEL,lc_centerline, self.lc_vel)
         if (hypoth_VEL > max_possible_safe_VEL):
             return False
         else:
             return True
-    # return true or false
 
 
     # Checks if it is safe to lane change given the presence of a vehicle in position B (if any)
     def isSafeWRTB(self):
-        # Calculate hypothitcal position and velocity of vechicle B after halfTimeofLC.
-        # hypothitcal >> in first halfTimeLC
-        # Final >> in second halfTimeLC
-
+        
+        # return true if there is no vehicle B
         if (self.vehicle_B == -1):
             return True
-
+        
+        # calculate center line of lane change trajectory
         lc_centerline = self.lc_halfvdist + self.my_x_pos
+        
+        # calculate right line of lane change trajectory
         lc_rightline = self.lc_vdist + self.my_x_pos
-        vehicle_B_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_B].velocity  # initial velocity of vechicle B
-        vehicle_B_initial_POS = self.my_vehicle_ids.ids[self.vehicle_B].x_position  # initial x_position of vechicle B
 
-        # apply max deceleration during timesteps till the center line. (Before the center line)
+        # get the initial positon and velocity for the vehicle B
+        vehicle_B_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_B].velocity  
+        vehicle_B_initial_POS = self.my_vehicle_ids.ids[self.vehicle_B].x_position 
+        
+        # calculate number of timesteps taken by ego vehicle to reach centerline
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
         LCnoOfTS_half = math.ceil(LCnoOfTS_half)
         LCnoOfTS_half = int(LCnoOfTS_half)
-
+        
+        # assume vehicle applies maximum deceleration during all timesteps the ego vehicle takes to reach centerline. (Before the center line)
         hypoth_VEL = vehicle_B_initial_VEL 
         hypoth_POS = vehicle_B_initial_POS 
 
@@ -344,24 +345,21 @@ class LaneChange:
             else:
                 hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + 0) * self.del_time)
                 hypoth_VEL = 0
-            # END for calc hypothetical vel and pos
 
-        # ego vechicle calcualion in the second halfTimeofLC
-        # Assuming lane change occurs at zero acceleration for the ego vechicle >> s = ut + 0.5*a*t^2
-        
+        # calculate number of timesteps taken by ego vehicle to reach rightline (starting from centerline)
         LCnoOfTS_half = float(self.lc_time - self.lc_halfTime) / float(self.del_time)
         LCnoOfTS_half = math.ceil(LCnoOfTS_half)
         LCnoOfTS_half = int(LCnoOfTS_half)
 
+        # get the final positon and velocity for the ego vehicle
         vehicle_ego_final_VEL = self.lc_vel
         vehicle_ego_final_DIST =  self.lc_vdist
         vehicle_ego_final_POS = self.lc_vdist + self.my_x_pos
 
-        # apply max deceleration during timesteps . (After the center line) -- Feasiblity check
+        # assume vehicle applies maximum deceleration during all timesteps the ego vehicle takes to reach rightline (starting from centerline)
         vehicle_B_final_VEL = hypoth_VEL 
         vehicle_B_final_POS = hypoth_POS 
 
-        
         for i in range(0,LCnoOfTS_half,1):
             temp_VEL = vehicle_B_final_VEL + (self.max_dec * self.del_time)
             if (temp_VEL >= 0):
@@ -370,43 +368,39 @@ class LaneChange:
             else:
                 vehicle_B_final_POS = vehicle_B_final_POS + (0.5 * (vehicle_B_final_VEL + 0) * self.del_time)
                 vehicle_B_final_VEL = 0
-
+        
+        # check for possible collision
         if (vehicle_B_final_POS <= lc_rightline):
-            rospy.loginfo("condition el right line")
             return False 
         else:
-            # Check Krauss 
+            # check whether the relative velocity between ego vehicle and vehicle B is safe (using krauss model)
             max_possible_safe_VEL = self.calcMaxSafeVel(vehicle_ego_final_POS, vehicle_ego_final_VEL, vehicle_B_final_POS, vehicle_B_final_VEL)
             if (vehicle_ego_final_VEL > max_possible_safe_VEL):
-                rospy.loginfo("condition krauss")
                 return False
             else:
                 return True    
-        # return true or false
 
     
     # Checks if it is safe to lane change given the presence of a vehicle in position D (if any)
     def isSafeWRTD(self):
-        # Calculate hypothitcal position and velocity of vechicle D after halfTimeofLC.
-        # hypothitcal >> in first halfTimeLC
-        # Final >> in second halfTimeLC 
-    
+
+        # return true if there is no vehicle D
         if (self.vehicle_D == -1):
             return True
-
+        
+        # calculate center line of lane change trajectory
         lc_centerline = self.lc_halfvdist + self.my_x_pos
-        vehicle_D_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_D].velocity  # initial velocity of vechicle D
-        vehicle_D_initial_POS = self.my_vehicle_ids.ids[self.vehicle_D].x_position  # initial x_position of vechicle D
 
-        # apply max deceleration during timesteps till the center line. (Before the center line)
-        rospy.loginfo("half time : ")
-        rospy.loginfo(self.lc_halfTime)
+        # get the initial positon and velocity for the vehicle D
+        vehicle_D_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_D].velocity  
+        vehicle_D_initial_POS = self.my_vehicle_ids.ids[self.vehicle_D].x_position
+
+        # calculate number of timesteps taken by ego vehicle to reach centerline 
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
         LCnoOfTS_half = math.ceil(LCnoOfTS_half)
         LCnoOfTS_half = int(LCnoOfTS_half)
-        rospy.loginfo("number of time steps : ")
-        rospy.loginfo(LCnoOfTS_half)
 
+        # assume vehicle applies maximum deceleration during all timesteps the ego vehicle takes to reach centerline. (Before the center line)
         hypoth_VEL = vehicle_D_initial_VEL
         hypoth_POS = vehicle_D_initial_POS
 
@@ -418,22 +412,16 @@ class LaneChange:
             else:
                 hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + 0) * self.del_time)
                 hypoth_VEL = 0 
-            rospy.loginfo("ana gowa el loop : ")
-            rospy.loginfo(hypoth_POS)
+
+        # check for possible collision        
         if (hypoth_POS <= lc_centerline):
             return False
         else:
             return True 
-        
-            # END for calc hypothetical vel and pos
-    # return true or false
 
 
     # Generates the waypoints to be used by Stanley controller to perform the lane change
     def generateLCWaypoints(self):
-        # msh btraga3 7aga
-        # same destination lanes will be the same code but put them in multiple if condition ta7soban l ay 7aga odam
-        # set self.lc_waypoints
 
         if (self.to_go_lane == 0):
             self.lc_waypoints = [(float(self.my_x_pos), float(0.2625), float(0.05)),
@@ -457,6 +445,7 @@ class LaneChange:
     # Uses Stanley controller in executing lane change
     # Returns true if lane change has finished 
     def stanleyController(self):
+
         if ((self.my_x_pos > self.lc_waypoints[2][0]) and (abs(self.my_yaw) <= 10e-02)):
             return True
         
@@ -525,10 +514,9 @@ class LaneChange:
     # Input data is Odometry message from topic /vesc/odom
     def odomCallback(self, odomMsg):
         
-        self.direction = rospy.get_param('direction') # int representing whether lane change is requested and what is the required direction (0:= no lane change requested, 1:= left lane change requested, 2:= right lane change requested)
+        self.direction = rospy.get_param('direction') 
+        rospy.loginfo("Desired direction :%d",self.direction) 
 
-        rospy.loginfo("Direction") #################################
-        rospy.loginfo(self.direction) #################################
         # if lane change is required    
         if (self.direction != 0):
 
@@ -546,7 +534,7 @@ class LaneChange:
                 # if the to-go lane is outside the world, declare that lane change is infeasible and return
                 if (not self.whichLanes()):
                     self.feasibility = 0
-                    rospy.loginfo("Infeasible") #################################
+                    rospy.loginfo("Lane change is: Infeasible") 
                     self.direction = 0
                     rospy.set_param('direction', 0)
                     return
@@ -561,12 +549,12 @@ class LaneChange:
 	
         	# if lane change is infeasible, return
                 if (self.feasibility == 0):
-                    rospy.loginfo("Infeasible") #################################
+                    rospy.loginfo("Lane change is: Infeasible") 
                     self.direction = 0
                     rospy.set_param('direction', 0)
                     return
 
-                rospy.loginfo("Feasible") #################################
+                rospy.loginfo("Lane change is: Feasible") 
                 # generate the waypoints to be used in performing the lane change
                 self.generateLCWaypoints()
                 
@@ -578,7 +566,7 @@ class LaneChange:
             if (self.stanleyController()): 
                 self.direction = 0
                 rospy.set_param('direction', 0)
-                rospy.loginfo("Finished") #################################
+                rospy.loginfo("Lane change has finished") 
                 self.finished = 1
 
 
