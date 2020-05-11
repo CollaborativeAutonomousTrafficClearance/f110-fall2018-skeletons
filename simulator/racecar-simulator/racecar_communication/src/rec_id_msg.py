@@ -8,20 +8,21 @@ class RecIDMsgs:
         
         self.robot_num = rospy.get_param('robot_num')
         self.last_received_footprints = FootprintsCombined()
-        self.last_received_ids = self.initiIdsCombined()
+        self.last_received_ids = self.initIdsCombined()
 
         self.pub1 = rospy.Publisher('/ids_combined', IDsCombined, queue_size=50) # publisher for 'IDsCombined' message
 
         self.pub2 = rospy.Publisher('/footprints_combined', FootprintsCombined, queue_size=50) # publisher for 'FootprintsCombined' message
 
     
-    # Initialize IDsCombined_msg 
-    def initiIdsCombined(self):
+    # Initialize IDsCombined message 
+    def initIdsCombined(self):
         idsCombined_msg = IDsCombined()
 
-	# Set lane number to -1 as a flag
+	# Set the initialization value of lane number to -1 (flag)
         for i in range(0,len(idsCombined_msg.ids),1):
             idsCombined_msg.ids[i].lane_num = -1
+
         return idsCombined_msg
 
     
