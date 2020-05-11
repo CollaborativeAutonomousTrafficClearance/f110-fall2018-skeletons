@@ -382,7 +382,7 @@ VEL 0.1
 Time: 15 secs
 TimeHalf: 7 secs
 Dist: 1.367 m
-DistHalf: 0.681
+DistHalf: 0.681 m
 
 VEL 0.2
 Time: 9 secs
@@ -392,11 +392,15 @@ DistHalf: 0.819 m
 
 VEL 0.3
 Time: 6 secs
+TimeHalf: 3 secs
 Dist: 1.754 m
------------------------------> speed fl x fl nos
+DistHalf: 0.984 m
+
 VEL 0.4
 Time: 4 secs
+TimeHalf: 2 secs
 Dist: 1.855 m
+DistHalf: 1.108 m
 
 VEL 0.5
 Time: 4 secs

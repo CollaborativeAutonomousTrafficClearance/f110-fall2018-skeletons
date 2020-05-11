@@ -118,16 +118,16 @@ class LaneChange:
 
         if (abs(self.lc_vel - 0.3) <= 0.05):
             self.lc_time = 6
-            self.lc_halfTime = 3 #  to be calculated from nadine
+            self.lc_halfTime = 3
             self.lc_vdist = 1.754
-            self.lc_halfvdist = 0.877 #  to be calculated from nadine
+            self.lc_halfvdist = 0.984
             return
 
         if (abs(self.lc_vel - 0.4) <= 0.05):
             self.lc_time = 4
-            self.lc_halfTime = 2 # to be calculated from nadine
+            self.lc_halfTime = 2
             self.lc_vdist = 1.855
-            self.lc_halfvdist = 0.9275 #  to be calculated from nadine
+            self.lc_halfvdist = 1.108
             return
         
         if (abs(self.lc_vel - 0.5) <= 0.05):

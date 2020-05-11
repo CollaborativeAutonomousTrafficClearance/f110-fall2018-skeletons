@@ -16,7 +16,7 @@ from std_msgs.msg import Header
 # CONSTANTS #
 #############
 
-VELOCITY = 0.1 # m/s
+VELOCITY = 0.4 # m/s
 
 ###########
 # GLOBALS #
@@ -40,14 +40,14 @@ nosBool = 0
 #                (float(-48.5), float(0.2625), float(0.05))]
 
 
-#path_points = [ (float(-50), float(0.2625), float(0.05)), 
- #               (float(-49.5), float(0.2625), float(0.05)),  
-  #              (float(-49), float(0.2625), float(0.05))]
+path_points = [ (float(-50), float(0.2625), float(0.05)), 
+                (float(-49.5), float(0.2625), float(0.05)),  
+                (float(-49), float(0.2625), float(0.05))]
 
 
-path_points = [(float(-40), float(-0.7875), float(0.05)),
-               (float(-40+0.5), float(-0.7875), float(0.05)),
-               (float(-40+1), float(-0.7875), float(0.05))]
+#path_points = [(float(-40), float(-0.7875), float(0.05)),
+#               (float(-40+0.5), float(-0.7875), float(0.05)),
+#               (float(-40+1), float(-0.7875), float(0.05))]
             
 
        
