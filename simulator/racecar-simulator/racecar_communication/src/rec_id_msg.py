@@ -18,9 +18,12 @@ class RecIDMsgs:
     # Initialize IDsCombined_msg 
     def initiIdsCombined(self):
         idsCombined_msg = IDsCombined()
+
+	# Set lane number to -1 as a flag
         for i in range(0,len(idsCombined_msg.ids),1):
             idsCombined_msg.ids[i].lane_num = -1
         return idsCombined_msg
+
     
     def idMsgsCallback(self, idMsgs):
         if (idMsgs.robot_num != self.robot_num):

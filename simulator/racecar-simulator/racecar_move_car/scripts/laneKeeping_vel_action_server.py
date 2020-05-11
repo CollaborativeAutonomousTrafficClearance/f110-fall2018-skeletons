@@ -70,8 +70,6 @@ class KraussModel:
         
         for i in range(len(idsMsg.ids)):
 
-            if (idsMsg.ids[i] != []):
-
                 if ((idsMsg.ids[i].lane_num == self.lane_num) and (idsMsg.ids[i].x_position >= self.x_pos)):
 
                     if ((self.found_lead == 0) or (idsMsg.ids[i].x_position < self.lead_x_pos)):
