@@ -435,7 +435,7 @@ class LaneKeeping:
     def __init__(self):
         
         self.yaw = 0 # vehicle's yaw
-        self.velocity =  0.3 # velocity of vehicle (m/s)
+        self.velocity =  0.1 # velocity of vehicle (m/s)
         self.pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
 
         self.line_lt = Line()         # line on the left of the lane

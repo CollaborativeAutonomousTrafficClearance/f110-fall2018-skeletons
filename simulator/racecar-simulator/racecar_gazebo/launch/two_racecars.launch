@@ -10,13 +10,13 @@
 
   <arg name="r_type1" default="racecar"/>
   <arg name="x_pos1" default="-40"/>
-  <arg name="y_pos1" default="0.2625"/>
+  <arg name="y_pos1" default="-0.2625"/>
   <arg name="z_pos1" default="0.05"/>
   <arg name="ctrl_method1" default=""/>
 
   <arg name="r_type2" default="racecar"/>
-  <arg name="x_pos2" default="-40.5"/>
-  <arg name="y_pos2" default="-0.2625"/>
+  <arg name="x_pos2" default="-41"/>
+  <arg name="y_pos2" default="0.2625"/>
   <arg name="z_pos2" default="0.05"/>
   <arg name="ctrl_method2" default=""/>
 

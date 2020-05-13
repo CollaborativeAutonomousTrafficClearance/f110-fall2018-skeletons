@@ -216,7 +216,7 @@ class nav_master(action_source):
 
                      # wait to check if lane change is feasible
 		     while(self.lc_client.current_feedback.mcFeedback == -1):
-			rospy.loginfo("Checing feasibility of lane change.")
+			rospy.loginfo("Checking feasibility of lane change.")
 
                      # if lane change is infeasible, lane keep instead
 		     if (self.lc_client.current_feedback.mcFeedback == 0):
