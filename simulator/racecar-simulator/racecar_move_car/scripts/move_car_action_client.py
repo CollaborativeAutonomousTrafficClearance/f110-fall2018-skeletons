@@ -231,9 +231,6 @@ class nav_master(action_source):
 
 
     def call_servers(self):
-        pass
-
-
         rospy.loginfo("Inside call server")
 
         # if lane change is still executing, do not send any new goals
