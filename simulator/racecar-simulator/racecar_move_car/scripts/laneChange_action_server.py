@@ -611,7 +611,7 @@ class LCActionServer():
             self.lc.finished = -1
             self.lc.direction = goal.mcGoal.control_action
 
-	    # wait if action is still being tested for feasibility
+	        # wait if action is still being tested for feasibility
             while (self.lc.feasibility == -1):
                continue
 
@@ -624,12 +624,12 @@ class LCActionServer():
                 self.a_server.set_aborted(self.result)
 
             # if action is feasible
-	    elif (self.lc.feasibility == 1):
+            elif (self.lc.feasibility == 1):
                 self.feedback.mcFeedback = 1
                 self.a_server.publish_feedback(self.feedback)
                 rospy.loginfo("Lane change is feasible and is being executed now")
 
-  	        # wait till action gets executed
+  	            # wait till action gets executed
                 while (self.lc.finished != 1):
                    continue
 

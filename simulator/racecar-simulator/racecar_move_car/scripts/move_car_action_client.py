@@ -168,7 +168,7 @@ class nav_master(action_source):
 
         rospy.loginfo("Inside update 1")
 	
-	#if (!goalReached_in.Bool)
+	    #if (!goalReached_in.Bool)
         self.current_control_action = chosen_action_in.control_action
         rospy.loginfo("Received nav action in move_car action client >>>>>>>>>>>>>>>>>>>>")
         rospy.loginfo(self.current_control_action)
@@ -185,66 +185,63 @@ class nav_master(action_source):
         rospy.loginfo("Inside call server")
 
         # if lane change is still executing, do not send any new goals
-	if (self.checkLaneChange() == 0):
+        if (self.checkLaneChange() == 0):
             rospy.loginfo("Cannot execute a new action; lane change is still unfinished.")
 
-	else:
-      
+        else:
+        
             # if both last and current actions are lane keeping, do not send any new goals
-	    if (self.current_control_action == 0 and self.last_control_action == 0):
-		rospy.loginfo("Keep lane keeping.")
+            if (self.current_control_action == 0 and self.last_control_action == 0):
+                rospy.loginfo("Keep lane keeping.")
+            
+            else:
+                # create a new goal object
+                new_goal = MoveCarGoal()
+                new_goal.mcGoal.header.stamp = rospy.Time.now()
+                new_goal.mcGoal.action_source = 0
+                new_goal.mcGoal.control_action = self.current_control_action
+                new_goal.mcGoal.acc = -100	 
 
-		
-	    else:
-                 # create a new goal object
-    	         new_goal = MoveCarGoal()
-	         new_goal.mcGoal.header.stamp = rospy.Time.now()
-                 new_goal.mcGoal.action_source = 0
-                 new_goal.mcGoal.control_action = self.current_control_action
-                 new_goal.mcGoal.acc = -100	 
+                # if current action is lane keeping, send goals to lk and lk vel servers
+                if (self.current_control_action == 0):
+                    # Cancel any current goals
+                    self.muteControlSource()
+                    self.vel_client.send_new_goal(new_goal) 
+                    self.lk_client.send_new_goal(new_goal) 
 
-                 # if current action is lane keeping, send goals to lk and lk vel servers
-		 if (self.current_control_action == 0):
-		     # Cancel any current goals
-                     self.muteControlSource()
-                     self.vel_client.send_new_goal(new_goal) 
-                     self.lk_client.send_new_goal(new_goal) 
+                else:
+                    # if current action is lane change, send goal to lc server
+                    self.lc_client.send_new_goal(new_goal) 
 
-		 else:
-                     # if current action is lane change, send goal to lc server
-                     self.lc_client.send_new_goal(new_goal) 
+                    # wait to check if lane change is feasible
+                    while(self.lc_client.current_feedback.mcFeedback == -1 and self.lc_client.current_result.mcResult == -1):
+                        rospy.loginfo("Checking feasibility of lane change.")
 
-                     # wait to check if lane change is feasible
-		     while(self.lc_client.current_feedback.mcFeedback == -1):
-			rospy.loginfo("Checking feasibility of lane change.")
+                    # if lane change is infeasible, lane keep instead
+                    if (self.lc_client.current_feedback.mcFeedback == 0 or self.lc_client.current_result.mcResult == 0):
+                        rospy.loginfo("Lane change was infeasible; lane keeping instead")
 
-                     # if lane change is infeasible, lane keep instead
-		     if (self.lc_client.current_feedback.mcFeedback == 0):
-			rospy.loginfo("Lane change was infeasible; lane keeping instead")
+                        # If vehicle was not lane keeping already, let it lane keep
+                        if (self.last_control_action != 0):
+                            new_goal.mcGoal.header.stamp = rospy.Time.now()
 
-			# If vehicle was not lane keeping already, let it lane keep
-			if (self.last_control_action != 0):
+                            self.current_control_action = 0
+                            new_goal.mcGoal.control_action = self.current_control_action
 
-    	                    new_goal.mcGoal.header.stamp = rospy.Time.now()
+                            # Cancel any current goals
+                            self.muteControlSource()
+                            self.vel_client.send_new_goal(new_goal) 
+                            self.lk_client.send_new_goal(new_goal)
 
-			    self.current_control_action = 0
-			    new_goal.mcGoal.control_action = self.current_control_action
-
-		  	    # Cancel any current goals
-          	            self.muteControlSource()
-                 	    self.vel_client.send_new_goal(new_goal) 
-                    	    self.lk_client.send_new_goal(new_goal)
-
-                     # If lane change is feasible, cancel lane keeping and velocity goals
-		     elif (self.lc_client.current_feedback.mcFeedback == 1):
-
-          	        self.lk_client.cancel_all_goals()
+                    # If lane change is feasible, cancel lane keeping and velocity goals
+                    elif (self.lc_client.current_feedback.mcFeedback == 1):
+                        self.lk_client.cancel_all_goals()
                         self.lk_client.destroy_last_goal_handle()
                         self.vel_client.cancel_all_goals()
                         self.vel_client.destroy_last_goal_handle()
 
-                 # update last control action
-                 self.last_control_action = self.current_control_action  
+                # update last control action
+                self.last_control_action = self.current_control_action  
 
 
 class qLearning_ambulance_master:
