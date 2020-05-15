@@ -26,7 +26,8 @@ class LaneChange:
         self.direction = 0 # int representing whether lane change is requested and what is the required direction (0:= no lane change requested, 1:= left lane change requested, 2:= right lane change requested)
         self.feasibility = -1 # int representing whether lane change is feasible (-1:= initialization value 0:= lane change is infeasible, 1:= lane change is feasible)
         self.finished = -1 # int representing whether lane change is finished (-1:= initialization value 0:= lane change still being executed, 1:= lane change finished)
-
+        
+        self.lc_default_vel = 0.1 # ego vehicle's default lane change velocity 
         self.lc_vel = 0 # lane change velocity
         self.lc_time = 0 # expected time needed to perform lane change
         self.lc_halfTime = 0 # expected half time needed to perform lane change
@@ -72,7 +73,7 @@ class LaneChange:
         self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used ################## rospy.get_param('')
         self.del_time = 1 # chosen delta time between iterations ################## rospy.get_param('')
 
-        self.pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
+        self.pub = rospy.Publisher('drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
 
 
     # Calculates which lane the ego vehicle is in and to which it needs to go, assuming we are in the threeLanes world
@@ -81,17 +82,17 @@ class LaneChange:
 
         # determining current lane
         if (self.my_y_pos >= 0):
-            self.curr_lane = 0;
+            self.curr_lane = 0
         elif (self.my_y_pos < -0.525):
             self.curr_lane = 2;   
         else:
-            self.curr_lane = 1;
+            self.curr_lane = 1
 
         # determining to-go lane
         if (self.direction == 1):
-            self.to_go_lane = self.curr_lane - 1;
+            self.to_go_lane = self.curr_lane - 1
         elif (self.direction == 2):
-            self.to_go_lane = self.curr_lane + 1;
+            self.to_go_lane = self.curr_lane + 1
 
         if ((self.to_go_lane < 0) or (self.to_go_lane > 2)):
             return False
@@ -494,7 +495,7 @@ class LaneChange:
         return False
 
 
-    # Input data (IDsCombined message from topic /ids_combined) used to update the vehicle_ids variable
+    # Input data (IDsCombined message from topic ids_combined) used to update the vehicle_ids variable
     def idsCallback(self, idsMsg):
 
         # if the array of vehicle ids is not empty
@@ -513,15 +514,21 @@ class LaneChange:
 
     # Input data is Odometry message from topic /vesc/odom
     def odomCallback(self, odomMsg):
-        
-        rospy.loginfo("Desired direction :%d",self.direction) 
 
+        """
+        # update ego vehicle's last non-zero velocity 
+        if (odomMsg.twist.twist.linear.x >= 0.1):
+            self.last_non_zero_vel = odomMsg.twist.twist.linear.x
+        """
+                
         # if lane change is required    
         if (self.direction != 0):
 
+            rospy.loginfo("Desired direction :%d",self.direction) 
+
             # set vehicle's odometry information
-            self.my_x_pos = odomMsg.pose.pose.position.x;
-            self.my_y_pos = odomMsg.pose.pose.position.y;
+            self.my_x_pos = odomMsg.pose.pose.position.x
+            self.my_y_pos = odomMsg.pose.pose.position.y
 
             orientation_q = odomMsg.pose.pose.orientation
             orientation_list = [orientation_q.x, orientation_q.y, orientation_q.z, orientation_q.w]
@@ -538,8 +545,13 @@ class LaneChange:
                     return
                 
                 # determine the required time and vertical distance needed for lane change (based on the vehicle's speed)
-                self.lc_vel = odomMsg.twist.twist.linear.x
+                if (odomMsg.twist.twist.linear.x >= 0.1):
+                    self.lc_vel = odomMsg.twist.twist.linear.x
+                else:
+                    self.lc_vel = self.lc_default_vel
+
                 self.setLCTimeAndVdist()
+
 
                 # check the feasibility of lane change (based on the communicated array of vehicle ids)
                 self.my_vehicle_ids = self.vehicle_ids
@@ -593,13 +605,13 @@ class LCActionServer():
         rospy.loginfo("Received goal in lane change action server")
 
         # extra check that lane change is requested 
-        if (goal.mcGoal.control_action ! = 0)
+        if (goal.mcGoal.control_action != 0):
 
             self.lc.feasibility = -1
             self.lc.finished = -1
             self.lc.direction = goal.mcGoal.control_action
 
-	    # wait if action is still being tested for feasibility
+	        # wait if action is still being tested for feasibility
             while (self.lc.feasibility == -1):
                continue
 
@@ -612,12 +624,12 @@ class LCActionServer():
                 self.a_server.set_aborted(self.result)
 
             # if action is feasible
-	    elif (self.lc.feasibility == 1):
+            elif (self.lc.feasibility == 1):
                 self.feedback.mcFeedback = 1
                 self.a_server.publish_feedback(self.feedback)
                 rospy.loginfo("Lane change is feasible and is being executed now")
 
-  	        # wait till action gets executed
+  	            # wait till action gets executed
                 while (self.lc.finished != 1):
                    continue
 
