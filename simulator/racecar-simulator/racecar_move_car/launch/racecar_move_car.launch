@@ -3,12 +3,14 @@
 
     <arg name="r_name" default="racecar"/>
     <arg name="vesc_ns" default="/vesc"/>
+    <arg name="use_comm_layer" default="true"/>
 
 
     <!--The move base node-->
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     
