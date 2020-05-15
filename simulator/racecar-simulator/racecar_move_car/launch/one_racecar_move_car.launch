@@ -50,6 +50,10 @@
       <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     </include>
 
+    <!--Action generator Node-->
+    <include file="$(find racecar_qlearning)/launch/action_generator.launch">
+    <arg name="r_name" value="$(arg r_name)"/>
+    </include>
 
     <!--Rviz Node-->
     <node name="$(anon rviz)" pkg="rviz" type="rviz"

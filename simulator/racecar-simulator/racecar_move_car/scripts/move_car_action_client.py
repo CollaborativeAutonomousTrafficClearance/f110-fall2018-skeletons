@@ -6,7 +6,12 @@ import message_filters
 from std_msgs.msg import Bool
 from racecar_navigation.msg import BoolWithHeader, NavAction
 from racecar_move_car.msg import Goal, MoveCarAction, MoveCarGoal, MoveCarFeedback, MoveCarResult
-from racecar_qlearning.msg import RLPolicyAction
+from racecar_qlearning.msg import RLPolicyRequest
+from racecar_qlearning.srv import RLPolicyActionService, RLPolicyActionServiceRequest, RLPolicyActionServiceResponse
+import threading
+
+#RL_lock = threading.Lock()
+#RL_lock.acquire()
 
 class baseClient:
 
@@ -18,7 +23,7 @@ class baseClient:
 
         #initializing the action goal to be sent 
         self.current_goal = MoveCarGoal()
-
+    
         #initializing the action feedback
         self.current_feedback = MoveCarFeedback()   # in case of lane change, this should be updated; very critical variable
         self.current_feedback.mcFeedback = -2 # uninitialized
@@ -63,11 +68,16 @@ class baseClient:
         self.current_result.mcResult = -1 # initialize result with -1
         
         #set the header just before sending the goal
-        self.current_goal.mcGoal.header = rospy.time.now()
+        self.current_goal.mcGoal.header.stamp = rospy.Time.now()
 
         #send the class' current goal
         self.client.send_goal(self.current_goal, self.done_cb, self.active_cb, self.feedback_cb) # specify appropriate callback functions
-
+    
+    def send_goal_and_wait(self, delta_time):
+        #function for sending a goal and waiting delta time to be executed
+        #delta_time must be rospy.duration()
+        self.state = self.client.send_goal_and_wait(self.current_goal, execute_timeout = delta_time)
+    
     def feedback_cb(self, feedback): 
         #callback function to update feedback
 
@@ -95,11 +105,25 @@ class baseClient:
         
         self.current_result = result
         rospy.loginfo("Retuned result for this goal.")
+
+        if self.current_goal.mcGoal.action_source == 1:   #If the action source is RL
+            pass
+        #releasing the lock, for the RL policy action server response to be sent
+            #RL_lock.release()
     
         
     def set_action_source(self, action_source_in):
-        #Update the action source 
-        self.current_goal.mcGoal.action_source = action_source_in   
+        #Update the action source in the move car goal
+        self.current_goal.mcGoal.action_source = action_source_in  
+
+    def set_acc(self, acc_in):
+        #Update the acceleration in the move car goal
+        self.current_goal.mcGoal.acc = acc_in
+    
+    def set_control_action(self, control_action_in):
+        #Update the control action in the move car goal
+        self.current_goal.mcGoal.control_action = control_action_in
+
 
 
 class laneKeepingClient(baseClient):
@@ -109,8 +133,8 @@ class laneKeepingClient(baseClient):
         actionName = "move_car/laneKeeping_action_server"
         baseClient.__init__(self, actionName)
         
-        self.current_goal.mcGoal.control_action = 0  # 0:= Lane Keeping
-        self.current_goal.mcGoal.acc = 0 #Lane keeping in this module doesn't require acceleration
+        self.set_control_action(0)  # 0:= Lane Keeping
+        self.set_acc(0) #Lane keeping in this module doesn't require acceleration
 
 class velocityClient(baseClient):
 
@@ -119,21 +143,9 @@ class velocityClient(baseClient):
         self.actionName = "move_car/laneKeeping_vel_action_server"
         baseClient.__init__(self, self.actionName)
 
-        self.current_goal.mcGoal.control_action = 0  # 0:= Lane Keeping
-        self.current_goal.mcGoal.acc = self.acc   #Set the current goal's acceleration
-        
-        #To store information about the car and know the next acceleration value
-        self.last_vel = 0.0
-        self.vel = 0.0
-        self.last_acc = 0.0
-        self.acc = 0.0
+        self.set_control_action(0) # 0:= Lane Keeping
     
-    def update_acc(self, delta_acc):   #argument is the change in acceleration required (RL)
-        self.last_acc = self.acc
-        self.acc = self.acc + delta_acc
-    
-    def get_current_car_acc(self):
-        return self.acc
+
 
 class laneChangeClient(baseClient):
 
@@ -142,10 +154,10 @@ class laneChangeClient(baseClient):
         self.actionName = "move_car/laneChange_action_server"
         baseClient.__init__(self, self.actionName)
 
-        self.current_goal.mcGoal.acc = 0 #lane change doesn't have acceleration in this module
+        self.set_acc(0) #lane change doesn't have acceleration in this module
 
     def set_direction(self, dir):  #1 --> Left Lane Change, 2 --> Right Lane Change
-        self.current_goal.mcGoal.control_action = dir
+        self.set_control_action(dir)
 
 class action_source:
 
@@ -293,37 +305,59 @@ class qLearning_ambulance_master(action_source):
 
         self.last_RL_control_action = -1   # Initially (0 --> Lane keeping, 1--> left lane change, 2--> right lane change)
         self.RL_control_action = -1 # Initially (0 --> Lane keeping, 1--> left lane change, 2--> right lane change)
-        self.delta_acc = 0.0 #Initially
-        
+        self.RL_acc = 0   #Initially 
+
         #Set the action source in the move car goal to be 1, indicating RL policy
         self.lc_client.set_action_source(1)
         self.lk_client.set_action_source(1)
         self.vel_client.set_action_source(1)
 
-    def update_action_server_goals(self, chosen_action_in):
+        #delta time
+        self.delta_lk_time = rospy.Duration(4,0)
 
-        #update the current chosen action 
-        self.RL_control_action = chosen_action_in.control_action
-        self.delta_acc = chosen_action_in.acc
+        #storing if the action is finished or infeasible, to be sent to the client 
+        # 0 --> Infeasible action, 1--> Finished Action
+        self.RLActionResult = False
+    
+    def set_RL_acc(self, acc_in):
+        self.RL_acc = acc_in
+    
+    def set_RL_control_action(self, action_in):
+        self.RL_control_action = action_in
 
-        #call servers to send the goal
-        self.call_servers()
-
-    def call_servers(self):
-        
-        #wait for the lane change to finish
-        while self.checkLaneChange() == False:    
-            rospy.loginfo("Cannot execute a new action from RL policy; lane change is still unfinished.")
-        
-        else:
+    def call_servers(self):            
             if self.RL_control_action == 0:   #If the control action is lane keeping
-                self.vel_client.update_acc(self.delta_acc)  #Update the acceleration
                 
-            elif self.RL_control_action == 1:
-                self.lc_client.set_direction(1)   #Set the direction same as control action, left lane change
+                self.vel_client.set_acc(self.RL_acc)  #Update the acceleration
+                "Lane keeping client should not begin without the velocity client"
+                self.lk_client.send_new_goal()  #start lane keeping
+
+                self.vel_client.send_goal_and_wait(self.delta_lk_time) #keep waiting for the goal for the required delta time
+
+                            
+                #blocking the function until a result is sent 
+                #RL_lock.acquire()
+                self.lk_client.cancel_this_goal()    #Cancel the lane keeping goal
+                
+                #setting the result to be sent to the service client again
+                if self.vel_client.current_result == 0:  #infeasible goal
+                    self.RLActionResult = False 
+                elif self.vel_client.current_result == 1:  #accomplished goal
+                    self.RLActionResult = True
+        
             
-            elif self.RL_control_action == 2:
-                self.lc_client.set_direction(2)    #Set the direction same as control action, right lane change
+            else:
+                if self.RL_control_action == 1:
+                    self.lc_client.set_direction(1)   #Set the direction same as control action, left lane change
+                    self.lc_client.send_new_goal()
+            
+                elif self.RL_control_action == 2:
+                    self.lc_client.set_direction(2)    #Set the direction same as control action, right lane change
+                    self.lc_client.send_new_goal()
+
+
+
+
 
 
 class clients_master:
@@ -336,7 +370,6 @@ class clients_master:
         rospy.loginfo("Inside move_car_action_client listener")
         
         if self.isRLactivated == False:    #This means RL is not activated, so subscribers should continue
-            
             ######## Navigation Subscribtions ###########
             # subscribe to receive navigation actions
             chosen_nav_action = message_filters.Subscriber("move_car/nav/chosen_action", NavAction)
@@ -344,21 +377,45 @@ class clients_master:
             goalReached  = message_filters.Subscriber("move_car/nav/goalReached", BoolWithHeader)
 
             ts = message_filters.TimeSynchronizer([chosen_nav_action, goalReached], 50)
-            ts.registerCallback(navigation.update_action_server_goals)
+            ts.registerCallback(self.navigation.update_action_server_goals)
         
     
-    def RL_listener(self):
-        
-        ########## RL Policy Actions Subscribtions #############
-        # subscribe to recieve RL actions
-        rospy.Subscriber("move_car/RL_chosen_action", RLPolicyAction, self.RL_activate)
-
-    
-    def RL_activate(self, chosen_action):
-        
-        # There has to be a message type written here to indicate that RL is deactivated
+    def RL_activate(self):
+        #function to indicate that RL should be activated, it waits for navigation to end
         self.isRLactivated = True
         self.navigation.muteControlSource()
+
+    
+    def handle_RLPolicyAction_service(self, chosen_action_in):
+        #handler for the RL policy action service when the RL requests an action to be performed 
+        
+        #if the RL action policy service request's flag is false, this means the car is still
+        #in the ambulance's window
+        if chosen_action_in.RLChosenAction.doneRLflag == False :
+
+            #update the current chosen action 
+            self.RL.set_RL_acc(chosen_action_in.RLChosenAction.acc)
+            self.RL.set_RL_control_action(chosen_action_in.RLChosenAction.control_action)
+
+            #waiting for the action to be processed 
+            self.RL.call_servers()
+
+            #return the response when done, in order for the RL action generator to send a new action 
+            return self.RL.RLActionResult
+        
+        else:
+            #If the car is outside the ambulance window
+            self.isRLactivated = False
+            return True
+    
+    def RLPolicyAction_server(self):
+        #the service connected to the RL policy action generator, when the action is finished, it informs the 
+        #action generator
+        self.RLPolicyActionService = rospy.Service('move_car/RL/RLPolicyActionService', RLPolicyActionService, self.handle_RLPolicyAction_service)
+        
+        #engage RL and mute any goal sent by navigation, this function is called once 
+        self.RL_activate()
+
 
         
 
@@ -366,9 +423,16 @@ class clients_master:
 if __name__ == '__main__':
     try:
         rospy.init_node('move_car_action_client', anonymous=True)
+        #Initializing master client object
         cm = clients_master()
-        cm.RL_listener()
-        cm.nav_listener()
+
+        #calling the RL policy action server, to execute the sent actions generated by RL policy
+        cm.RLPolicyAction_server()
+
+        #calling the navigation listener, to execute goals sent by navigation stack
+        #cm.nav_listener()
+        
+        #wait for any callbacks in navigation listener or RL action policy server 
         rospy.spin()
 
     except rospy.ROSInterruptException as e:
