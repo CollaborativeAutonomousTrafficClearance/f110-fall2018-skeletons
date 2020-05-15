@@ -10,7 +10,7 @@
     <arg name="vis_laser" default="true"/>
 
     <arg name="r_type" default="racecar"/>
-    <arg name="x_pos" default="-40"/>
+    <arg name="x_pos" default="-10"/>
     <arg name="y_pos" default="-0.2625"/>
     <arg name="z_pos" default="0.05"/>
     <arg name="ctrl_method" default=""/>
