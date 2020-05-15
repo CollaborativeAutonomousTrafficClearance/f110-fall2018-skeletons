@@ -7,6 +7,7 @@
 
     <arg name="r_name" default="racecar"/>
     <arg name="vesc_ns" default="/vesc"/>
+    <arg name="vis_laser" default="true"/>
 
     <arg name="r_type1" default="racecar"/>
     <arg name="x_pos1" default="-50"/>
@@ -32,6 +33,8 @@
     <arg name="z_pos4" default="0.05"/>
     <arg name="ctrl_method4" default=""/>
 
+    <arg name="comm_range" default="10"/>
+    <arg name="use_comm_layer" default="true"/>
 
     <!--Launching Gazebo With The Racecars-->
     <include file="$(find racecar_gazebo)/launch/four_racecars.launch">
@@ -40,6 +43,7 @@
 
       <arg name="r_name" value="$(arg r_name)"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+      <arg name="vis_laser" value="$(arg vis_laser)"/>
 
       <arg name="r_type1" value="$(arg r_type1)"/>
       <arg name="x_pos1" value="$(arg x_pos1)"/>
@@ -64,6 +68,8 @@
       <arg name="y_pos4" value="$(arg y_pos4)"/>
       <arg name="z_pos4" value="$(arg z_pos4)"/>
       <arg name="ctrl_method4" value="$(arg ctrl_method4)"/>
+
+      <arg name="comm_range" value="$(arg comm_range)"/>
     </include>
 
 
@@ -95,21 +101,25 @@
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)1"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)2"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)2"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)3"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)3"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
     <include file="$(find racecar_navigation)/launch/racecar_move_base.launch">
       <arg name="r_name" value="$(arg r_name)4"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)4"/>
+      <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
 

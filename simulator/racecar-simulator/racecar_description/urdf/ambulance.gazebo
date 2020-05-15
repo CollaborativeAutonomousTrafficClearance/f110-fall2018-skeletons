@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <robot name="ambulance" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+<xacro:arg name="vis_laser" default="true"/>
+
 <!-- Gazebo references -->
 
 <gazebo reference="chassis">
@@ -63,7 +65,9 @@
     <material>Gazebo/Green</material>
     <sensor type="ray" name="hokuyo_sensor">
       <pose>0 0 0.0124 0 0 0</pose>
-      <visualize>true</visualize>
+      <xacro:if value="$(arg vis_laser)">
+        <visualize>true</visualize>
+      </xacro:if>
       <update_rate>40</update_rate>
       <ray>
         <scan>

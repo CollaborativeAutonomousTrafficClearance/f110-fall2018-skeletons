@@ -7,9 +7,12 @@
 
   <arg name="r_name" default="racecar"/>
   <arg name="vesc_ns" default="/vesc"/>
+  <arg name="vis_laser" default="true"/>
+
   <arg name="r_type" default="racecar"/>
-  <arg name="x_pos" default="0"/>
-  <arg name="y_pos" default="-0.25"/>
+
+  <arg name="x_pos" default="-40"/>
+  <arg name="y_pos" default="-0.2625"/>
   <arg name="z_pos" default="0.05"/>
   <arg name="ctrl_method" default=""/>
 
@@ -24,6 +27,7 @@
     <arg name="r_name" value="$(arg r_name)"/>
     <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     <arg name="r_num" value="1"/>
+    <arg name="vis_laser" value="$(arg vis_laser)"/>
     <arg name="r_type" value="$(arg r_type)"/>
     <arg name="x_pos" value="$(arg x_pos)"/>
     <arg name="y_pos" value="$(arg y_pos)"/>
