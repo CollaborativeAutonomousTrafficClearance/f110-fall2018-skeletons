@@ -55,9 +55,9 @@
     </include>
 
     <!--Action generator Node-->
-    <include file="$(find racecar_qlearning)/launch/action_generator.launch">
+    <!--<include file="$(find racecar_qlearning)/launch/action_generator.launch">
     <arg name="r_name" value="$(arg r_name)"/>
-    </include>
+    </include>-->
 
     <!--Rviz Node-->
     <node name="$(anon rviz)" pkg="rviz" type="rviz"
