@@ -2,11 +2,16 @@
 
 import rospy
 import actionlib
+import threading
 from racecar_move_car.msg import  MoveCarAction, MoveCarGoal, MoveCarResult
 from racecar_communication.msg import IDsCombined
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32
 from geometry_msgs.msg import Twist
+
+# Lock to synchronize the action server with the actual action execution
+activity_lock = threading.Lock()
+activity_lock.acquire()
 
 ##------------------------------------------------------------------------------------------##
 ##------------------------------------------------------------------------------------------##
@@ -135,6 +140,7 @@ class KraussModel:
                     if ((lk_vel > self.ceil_vel) or (self.req_RL_acc > self.max_acc)):
                         # set active to -1 indicating an infeasible action
                         self.active = -1
+                        activity_lock.release()
                     else: 
    	                # publish the calculated lane keeping velocity
 		        self.pub.publish(lk_vel)
@@ -143,6 +149,7 @@ class KraussModel:
 
 	                # switch to inactive
 	                self.active = 0
+                        activity_lock.release()
 
 
 		# update time
@@ -199,9 +206,10 @@ class VelActionServer():
             self.km.req_RL_acc = goal.mcGoal.acc
             self.km.active = 2
 
-	    # wait if action is still being tested for feasibility or being executed
-            while ((self.km.active != -1) and (self.km.active != 0)):
-                continue
+	    # block while action is still being tested for feasibility or being executed
+            #while ((self.km.active != -1) and (self.km.active != 0)):
+            #    continue
+            activity_lock.acquire()
 
 	    # if action was successfully executed
             if (self.km.active == 0):

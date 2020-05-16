@@ -5,11 +5,20 @@ import actionlib
 import math
 import numpy as np
 import os
+import threading
 from racecar_move_car.msg import  MoveCarAction, MoveCarGoal, MoveCarFeedback, MoveCarResult
 from racecar_control.msg import drive_param
 from racecar_communication.msg import IDsCombined
 from nav_msgs.msg import Odometry
 from tf.transformations import euler_from_quaternion
+
+# Lock to synchronize the action server with the action feasibility check
+feasiblity_lock = threading.Lock()
+feasiblity_lock.acquire()
+
+# Lock to synchronize the action server with the actual action execution (if it will be executed)
+result_lock = threading.Lock()
+result_lock.acquire()
 
 ##------------------------------------------------------------------------------------------##
 ##------------------------------------------------------------------------------------------##
@@ -539,7 +548,8 @@ class LaneChange:
                 # determine vehicle's current and to-go lane numbers
                 # if the to-go lane is outside the world, declare that lane change is infeasible and return
                 if (not self.whichLanes()):
-                    self.feasibility = 0
+                    self.feasibility = 0 
+                    feasiblity_lock.release()
                     rospy.loginfo("Lane change is: Infeasible") 
                     self.direction = 0
                     return
@@ -556,6 +566,7 @@ class LaneChange:
                 # check the feasibility of lane change (based on the communicated array of vehicle ids)
                 self.my_vehicle_ids = self.vehicle_ids
                 self.feasibility = self.isLCFeasible()
+                feasiblity_lock.release()
 	
         	# if lane change is infeasible, return
                 if (self.feasibility == 0):
@@ -576,6 +587,7 @@ class LaneChange:
                 self.direction = 0
                 rospy.loginfo("Lane change has finished") 
                 self.finished = 1
+                result_lock.release()
 
 
 
@@ -611,9 +623,10 @@ class LCActionServer():
             self.lc.finished = -1
             self.lc.direction = goal.mcGoal.control_action
 
-	        # wait if action is still being tested for feasibility
-            while (self.lc.feasibility == -1):
-               continue
+	        # block while action is still being tested for feasibility
+            #while (self.lc.feasibility == -1):
+            #   continue
+            feasiblity_lock.acquire()
 
             # if action is infeasible
             if (self.lc.feasibility == 0):
@@ -629,9 +642,10 @@ class LCActionServer():
                 self.a_server.publish_feedback(self.feedback)
                 rospy.loginfo("Lane change is feasible and is being executed now")
 
-  	            # wait till action gets executed
-                while (self.lc.finished != 1):
-                   continue
+  	            # block till action gets executed
+                #while (self.lc.finished != 1):
+                #   continue
+                result_lock.acquire()
 
                 self.result.mcResult = 1
                 rospy.loginfo("Finished lane change in lane change action server")
