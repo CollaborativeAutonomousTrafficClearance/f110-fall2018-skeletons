@@ -1,0 +1,5 @@
+--> SOME needed functions prototypes (NEGOTIABLE)
+--> functions to be included in basic_env_comm.py
+
+getState(int vehicle_index)
+are_we_done(int step) not sure of input??? --> returns int done
