@@ -234,6 +234,13 @@ class action_source:
             return False
         else:
             return True
+    
+    def cancel_goals_lk_vel_clients(self):
+        self.lk_client.cancel_all_goals()
+        self.lk_client.destroy_last_goal_handle()
+        self.vel_client.cancel_all_goals()
+        self.vel_client.destroy_last_goal_handle()
+
 
 
 class nav_master(action_source):
@@ -323,10 +330,7 @@ class nav_master(action_source):
 
                 # If lane change is feasible, cancel lane keeping and velocity goals
                 elif (self.lc_client.get_feedback() == 1):
-                    self.lk_client.cancel_all_goals()
-                    self.lk_client.destroy_last_goal_handle()
-                    self.vel_client.cancel_all_goals()
-                    self.vel_client.destroy_last_goal_handle()
+                    self.cancel_goals_lk_vel_clients()
                         
                     #wait for lane change to finish
                     self.lc_client.block_till_result()
