@@ -25,7 +25,8 @@ class KraussModel:
     def __init__(self):
 
         self.t_r = 1 # estimated driver reaction time ~ 1 sec
-        self.max_vel = 0.5 # maximum ego vehicle velocity allowed
+        #self.max_vel = 0.5 # maximum ego vehicle velocity allowed 
+        self.max_vel = 0.2 # testing  
         self.max_acc = 0.1 # maximum ego vehicle acceleration allowed
         self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used
 
@@ -181,48 +182,49 @@ class VelActionServer():
     def execute_cb(self, goal):
 
         rospy.loginfo("Received goal in lane keeping velocity action server")
+        #Extra check that the goal is lane keeping
+        if(goal.mcGoal.control_action == 0):
+	        # if action is requested by navigation module
+            if (goal.mcGoal.action_source == 0):
+                self.km.active = 1
+                rate = rospy.Rate(1)
+                rospy.loginfo("Executing goal in lane keeping velocity action server")
 
-	# if action is requested by navigation module
-        if (goal.mcGoal.action_source == 0):
+                while(1):
+                    # check that preempt has not been requested by the client
+                    if self.a_server.is_preempt_requested():
+                        self.km.active = 0
+                        rospy.loginfo("Goal preempted in lane keeping velocity action server")
+                        self.a_server.set_preempted() #########send result?
+                        break
 
-	    self.km.active = 1
-            rate = rospy.Rate(1)
+                    rate.sleep()
 
-            rospy.loginfo("Executing goal in lane keeping velocity action server")
+	        # if action is requested by RL policy
+            elif (goal.mcGoal.action_source == 1):
 
-            while(1):
-                # check that preempt has not been requested by the client
-                if self.a_server.is_preempt_requested():
-		    self.km.active = 0
-                    rospy.loginfo("Goal preempted in lane keeping velocity action server")
-                    self.a_server.set_preempted() #########send result?
-                    break
+                self.km.req_RL_acc = goal.mcGoal.acc
+                self.km.active = 2
 
-                rate.sleep()
+	            # block while action is still being tested for feasibility or being executed
+                #while ((self.km.active != -1) and (self.km.active != 0)):
+                #    continue
+                activity_lock.acquire()
 
-	# if action is requested by RL policy
-        elif (goal.mcGoal.action_source == 1):
+	            # if action was successfully executed
+                if (self.km.active == 0):
+                    self.result.mcResult = 1
+                    rospy.loginfo("Reached goal in lane keeping velocity action server")
+                    self.a_server.set_succeeded(self.result)
 
-            self.km.req_RL_acc = goal.mcGoal.acc
-            self.km.active = 2
-
-	    # block while action is still being tested for feasibility or being executed
-            #while ((self.km.active != -1) and (self.km.active != 0)):
-            #    continue
-            activity_lock.acquire()
-
-	    # if action was successfully executed
-            if (self.km.active == 0):
-                self.result.mcResult = 1
-                rospy.loginfo("Reached goal in lane keeping velocity action server")
-                self.a_server.set_succeeded(self.result)
-
-	    # if action was found to be infeasible
-            elif (self.km.active == -1):
-                self.result.mcResult = 0
-                rospy.loginfo("Infeasible goal in lane keeping velocity action server")
-                self.a_server.set_aborted(self.result)
-
+	            # if action was found to be infeasible
+                elif (self.km.active == -1):
+                    self.result.mcResult = 0
+                    rospy.loginfo("Infeasible goal in lane keeping velocity action server")
+                    self.a_server.set_aborted(self.result)
+        else:
+            rospy.loginfo("Goal is not lane keeping, Please debug your code!")
+            self.a_server.set_aborted()
 
 
 if __name__ == "__main__":
