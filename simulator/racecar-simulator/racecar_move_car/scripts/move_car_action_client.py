@@ -109,7 +109,7 @@ class baseClient:
             lc_fb_dn_syn_lock.release()
         
     
-    def get_feedback(self, feedback):
+    def get_feedback(self):
         return self.current_feedback.mcFeedback 
         
     def active_cb(self):
@@ -311,7 +311,7 @@ class nav_master(action_source):
 
                 # if lane change is infeasible, lane keep instead
                 #if (self.lc_client.get_feedback == 0 or self.lc_client.get_result == 0):
-                if (self.lc_client.get_feedback == 0):
+                if (self.lc_client.get_feedback() == 0):
                     #rospy.loginfo("Lane change was infeasible; lane keeping instead")
 
                     # If vehicle was not lane keeping already, let it lane keep
