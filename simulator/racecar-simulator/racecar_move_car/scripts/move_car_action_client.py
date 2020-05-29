@@ -262,7 +262,7 @@ class action_source:
 class nav_master(action_source):
 
     def __init__(self):
-        rospy.loginfo("Inside the nav master")
+        rospy.loginfo("Starting the navigation master")
         action_source.__init__(self)
         
         #Initializing the last and current control actions required in the navigation module
@@ -310,7 +310,7 @@ class nav_master(action_source):
                 self.muteControlSource()
 
                 #Send goals in for velocity and lane keeping clients 
-                rospy.loginfo("Sening lane keeping goals in navigation module")
+                rospy.loginfo("Sending lane keeping goals in navigation module")
                 self.vel_client.send_new_goal()
                 self.lk_client.send_new_goal() 
 
@@ -321,7 +321,7 @@ class nav_master(action_source):
                 #Blocking the function till lane change feasibility check is finished (Feedback changes)
                 rospy.loginfo("Waiting for lane change feasibility check to end")
                 lc_lock_feedback.acquire()
-                rospy.loginfo("lane change feasibility check ended")
+                rospy.loginfo("Lane change feasibility check ended")
 
                 # if lane change is infeasible, lane keep instead
                 if (self.lc_client.get_feedback() == 0 or self.lc_client.get_result() == 0):

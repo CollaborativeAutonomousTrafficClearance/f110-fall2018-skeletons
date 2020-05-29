@@ -6,4 +6,4 @@ take_action() and returns chosen_action --> string perhaps
 update_q_table(chosen_action, reward, agent_state_after,
                                       agent_state_before)
 
-disactivate() --> tetnada lama nb2a 3yzeen neb3at elflag bta3 enena hanerga3 neshtaghal navigation
+disengage() --> tetnada lama nb2a 3yzeen neb3at elflag bta3 enena hanerga3 neshtaghal navigation
