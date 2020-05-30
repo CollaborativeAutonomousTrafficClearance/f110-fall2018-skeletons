@@ -10,6 +10,8 @@ project(racecar_clear_ev_route)
 find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
+  genmsg
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -52,12 +54,12 @@ catkin_python_setup()
 #   Message2.msg
 # )
 
-## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
+#Generate services in the 'srv' folder
+ add_service_files(
+   FILES
+   RLPolicyActionService.srv
 #   Service2.srv
-# )
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -67,10 +69,10 @@ catkin_python_setup()
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-# )
+generate_messages(
+   DEPENDENCIES
+   std_msgs
+ )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -106,6 +108,7 @@ catkin_package(
 #  LIBRARIES racecar_clear_ev_route
 #  CATKIN_DEPENDS rospy std_msgs
 #  DEPENDS system_lib
+   DEPENDS message_runtime
 )
 
 ###########

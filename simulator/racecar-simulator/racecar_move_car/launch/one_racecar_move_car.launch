@@ -10,7 +10,7 @@
     <arg name="vis_laser" default="true"/>
 
     <arg name="r_type" default="racecar"/>
-    <arg name="x_pos" default="-10"/>
+    <arg name="x_pos" default="0"/>
     <arg name="y_pos" default="-0.2625"/>
     <arg name="z_pos" default="0.05"/>
     <arg name="ctrl_method" default=""/>
@@ -54,10 +54,6 @@
       <arg name="vesc_ns" value="$(arg vesc_ns)"/>
     </include>
 
-    <!--Action generator Node-->
-    <!--<include file="$(find racecar_qlearning)/launch/action_generator.launch">
-    <arg name="r_name" value="$(arg r_name)"/>
-    </include>-->
 
     <!--Rviz Node-->
     <node name="$(anon rviz)" pkg="rviz" type="rviz"

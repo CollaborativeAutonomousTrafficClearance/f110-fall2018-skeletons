@@ -616,16 +616,19 @@ class LCActionServer():
 
         rospy.loginfo("Received goal in lane change action server")
 
+
         # extra check that lane change is requested 
         if (goal.mcGoal.control_action != 0):
 
             self.lc.feasibility = -1
             self.lc.finished = -1
             self.lc.direction = goal.mcGoal.control_action
+            
 
 	        # block while action is still being tested for feasibility
             #while (self.lc.feasibility == -1):
             #   continue
+            rospy.loginfo("Checking feasibility")
             feasiblity_lock.acquire()
 
             # if action is infeasible
@@ -645,12 +648,17 @@ class LCActionServer():
   	            # block till action gets executed
                 #while (self.lc.finished != 1):
                 #   continue
+                rospy.loginfo("waiting for execution")
                 result_lock.acquire()
 
                 self.result.mcResult = 1
                 rospy.loginfo("Finished lane change in lane change action server")
                 self.a_server.set_succeeded(self.result)
-
+        else:
+            rospy.loginfo("Goal is not lane change, Please debug your code!")
+            self.feedback.mcFeedback = 0
+            self.a_server.publish_feedback()
+            self.a_server.set_aborted()
 
 
 if __name__ == "__main__":

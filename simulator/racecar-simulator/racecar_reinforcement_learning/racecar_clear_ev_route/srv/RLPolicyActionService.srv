@@ -7,3 +7,4 @@ bool doneRLflag   #flag for ending the RL
 ---
 #Response
 bool RLActionresult       #0 --> Infeasible action -- 1--> finished action
+float32 RLActionTime        #Storing the time taken by the execution of any action, the goal has to be finished

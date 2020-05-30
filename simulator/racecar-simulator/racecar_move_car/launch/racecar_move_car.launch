@@ -3,7 +3,7 @@
 
     <arg name="r_name" default="racecar"/>
     <arg name="vesc_ns" default="/vesc"/>
-    <arg name="use_comm_layer" default="true"/>
+    <arg name="use_comm_layer" default="false"/>
 
 
     <!--The move base node-->

@@ -2,7 +2,12 @@
 
 import rospy
 import actionlib
+import threading
 from racecar_move_car.msg import  MoveCarGoal, MoveCarAction
+
+# Lock to synchronize the action server with the actual action execution
+activity_lock = threading.Lock()
+activity_lock.acquire()
 
 #Lane keeping imports
 from racecar_control.msg import drive_param
@@ -558,9 +563,18 @@ class LKActionServer():
     def __init__(self):
 
         self.a_server = actionlib.SimpleActionServer("move_car/laneKeeping_action_server", MoveCarAction, self.execute_cb, False)
+        self.a_server.register_preempt_callback(self.preemptCB)
         self.a_server.start()
         self.lk = LaneKeeping() # object of class LaneKeeping
-    
+
+
+    def preemptCB(self):
+        self.lk.active = 0
+        rospy.loginfo("Goal preempted in lane keeping action server")
+        
+        activity_lock.release()
+
+
     # Goal callback function; goal is a MoveCarAction message
     def execute_cb(self, goal):
         
@@ -570,19 +584,28 @@ class LKActionServer():
         if (goal.mcGoal.control_action == 0):
 
 	    self.lk.active = 1
-            rate = rospy.Rate(1)
 
-            rospy.loginfo("Executing goal in lane keeping action server")
+            activity_lock.acquire(False)
+            activity_lock.acquire(True)
 
-            while(1):
-                # check that preempt has not been requested by the client
-                if self.a_server.is_preempt_requested():
-		    self.lk.active = 0
-                    rospy.loginfo("Goal preempted in lane keeping action server")
-                    self.a_server.set_preempted() #########send result?
-                    break
+            self.a_server.set_preempted()
 
-                rate.sleep()
+            #rate = rospy.Rate(1)
+
+            #rospy.loginfo("Executing goal in lane keeping action server")
+
+            #while(1):
+            #    # check that preempt has not been requested by the client
+            #    if self.a_server.is_preempt_requested():
+	    #        self.lk.active = 0
+            #        rospy.loginfo("Goal preempted in lane keeping action server")
+            #        self.a_server.set_preempted() #########send result?
+            #        break
+
+            #    rate.sleep()
+        else:
+            rospy.loginfo("Goal is not lane keeping. Please debug your code!")
+            self.a_server.set_aborted()
     
 
 if __name__ == "__main__":
