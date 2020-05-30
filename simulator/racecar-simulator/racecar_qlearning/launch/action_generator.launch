@@ -1,8 +1,0 @@
-<?xml version="1.0"?>
-<launch>
-    <arg name="r_name" default="racecar"/>
-    
-    <node pkg="racecar_qlearning" type="actionGenerator.py" name="actionGenerator" output="screen" ns="/$(arg r_name)">
-    </node>
-
-</launch>
