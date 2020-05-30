@@ -210,7 +210,7 @@ class SAQLMaster:
             # 3.3: measurements and if we are done check
             agent_state_after = self.ENV_COMM.getState(self.robot_num)
 
-            self.is_episode_done = self.ENV_COMM.are_we_done(full_state = Proudhon.full_state, step_number=step) #TODO TODO: ####################
+            #self.is_episode_done = self.ENV_COMM.are_we_done(full_state = Proudhon.full_state, step_number=step) #TODO TODO: ####################
 
             # 3.4: reward last step's chosen action
             reward = self.ENV_COMM.calc_reward(amb_last_velocity, self.is_episode_done, step) #TODO TODO: ####################
