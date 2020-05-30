@@ -85,7 +85,7 @@ class single_agent_qlearning:
         self.new_observed_state_for_this_agent.rel_amb_y = np.clip(new_observed_state_for_this_agent[4], self.rel_amb_y_min,
                             self.rel_amb_y_max)  # rel_amb_y  (16+1+41 = 58): [-41,-40,-39,.....,0,...13,14,15,16]
 
-        "If it takes an array, uncomment the following and remove from 81 to 86"
+        "If it takes an array, uncomment the following (89) and remove from 81 to 86"
         #self.new_observed_state_for_this_agent = new_observed_state_for_this_agent
 
         #getting indices from states
@@ -240,9 +240,10 @@ class single_agent_qlearning:
             q_of_s_a_value = \
             self.q_table[agent_vel_index][agent_lane_index][amb_vel_index][amb_lane_index][rel_amb_y_index][action_index]
 
+            #ROS edits in problem forumation 
             if (q_of_s_a_value == -1000):
                 q_of_s_a_value = 0
-                
+
             # max Q(s',a')
             max_q_of_s_value_new = np.max(self.q_table[
                                               new_agent_vel_index, new_agent_lane_index, new_amb_vel_index, new_amb_lane_index, new_rel_amb_y_index])
