@@ -2,8 +2,10 @@
 <launch>
     
     <!--Arguments-->
+    <arg name="launch_world" default="true"/>
     <arg name="world_name" default="threeLanes" />
     <arg name="gui" default="true" />
+    <arg name="rviz" default="true"/>
 
     <arg name="r_name" default="racecar"/>
     <arg name="vesc_ns" default="/vesc"/>
@@ -39,6 +41,7 @@
 
     <!--Launching Gazebo With The Racecars-->
     <include file="$(find racecar_gazebo)/launch/four_racecars.launch">
+      <arg name="launch_world" value="$(arg launch_world)" />
       <arg name="world_name" value="$(arg world_name)" />
       <arg name="gui" value="$(arg gui)" />
 
@@ -125,8 +128,9 @@
 
 
     <!--Rviz Node-->
-    <node name="$(anon rviz)" pkg="rviz" type="rviz"
-          args="-d $(find racecar_rviz)/rviz/two_navigation.rviz" output="screen"/>
-
+    <group if="$(arg rviz)">
+      <node name="$(anon rviz)" pkg="rviz" type="rviz"
+            args="-d $(find racecar_rviz)/rviz/two_navigation.rviz" output="screen"/>
+    </group>
 
 </launch>

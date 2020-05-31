@@ -2,8 +2,9 @@
 <launch>
 
   <!--Arguments-->
-  <arg name="world_name" default="threeLanes" />
-  <arg name="gui" default="true" />
+  <arg name="launch_world" default="true"/>
+  <arg name="world_name" default="threeLanes"/>
+  <arg name="gui" default="true"/>
 
   <arg name="r_name" default="racecar"/>
   <arg name="vesc_ns" default="/vesc"/>
@@ -16,11 +17,14 @@
   <arg name="z_pos" default="0.05"/>
   <arg name="ctrl_method" default=""/>
 
+
   <!--Gazebo World-->
-  <include file="$(find gazebo_ros)/launch/empty_world.launch">
-    <arg name="world_name" value="$(find racecar_gazebo)/worlds/$(arg world_name).sdf"/>
-    <arg name="gui" value="$(arg gui)"/>
-  </include>
+  <group if="$(arg launch_world)">
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+      <arg name="world_name" value="$(find racecar_gazebo)/worlds/$(arg world_name).sdf"/>
+      <arg name="gui" value="$(arg gui)"/>
+    </include>
+  </group>
 
 
   <include file="$(find racecar_gazebo)/launch/racecar.launch" ns="/$(arg r_name)">

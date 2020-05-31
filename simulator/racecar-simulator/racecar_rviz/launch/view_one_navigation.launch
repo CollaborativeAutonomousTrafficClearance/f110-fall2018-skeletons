@@ -2,5 +2,9 @@
   Used for visualising the arlobot while building a map or navigating with the ros navistack.
  -->
 <launch>
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find racecar_rviz)/rviz/one_navigation.rviz"/>
+
+  <arg name="ns" default="racecar"/>
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find racecar_rviz)/rviz/one_navigation.rviz" output="screen" ns="$(arg ns)"/>
+
 </launch>
