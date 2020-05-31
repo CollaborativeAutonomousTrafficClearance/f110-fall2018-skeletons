@@ -1,3 +1,4 @@
+"""
 #!/usr/bin/env python
 import threading
 import pdb
@@ -81,3 +82,5 @@ if __name__ == '__main__':
     # debug # rospy.loginfo("after states server")
     #rospy.loginfo(cEVrbe.reward)
     rospy.spin()
+
+"""
