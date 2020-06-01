@@ -58,7 +58,6 @@ add_message_files(
    FILES
    states.srv
    reward.srv
-   areWeDone.srv
 #   Service1.srv
 #   Service2.srv
   )
