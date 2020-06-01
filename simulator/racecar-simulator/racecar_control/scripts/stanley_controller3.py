@@ -16,7 +16,7 @@ from std_msgs.msg import Header
 # CONSTANTS #
 #############
 
-VELOCITY = 0.4 # m/s
+VELOCITY = rospy.get_param('max_vel') # m/s
 
 ###########
 # GLOBALS #

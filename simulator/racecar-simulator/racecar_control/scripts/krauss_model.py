@@ -8,9 +8,9 @@ class KraussModel:
     def __init__(self):
         
         self.t_r = 1 # estimated driver reaction time ~ 1 sec
-        self.max_vel = 1 # maximum ego vehicle velocity allowed ################## rospy.get_param('')
-        self.max_acc = 0.2 # maximum ego vehicle acceleration allowed ############## rospy.get_param('')
-        self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used
+        self.max_vel = rospy.get_param('max_vel') # maximum ego vehicle velocity allowed
+        self.max_acc = rospy.get_param('max_acc') # maximum ego vehicle acceleration allowed
+        self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used - value could be increased than actual to enforce a greater minimal gap between vehicles
 
         self.vel = 0 # ego vehicle current velocity
         self.x_pos = 0 # ego vehicle current x position (in global frame)

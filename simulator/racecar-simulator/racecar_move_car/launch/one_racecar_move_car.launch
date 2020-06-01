@@ -60,16 +60,18 @@
 
 
     <!--The Move Car Node-->
-    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)">
       <arg name="r_name" value="$(arg r_name)"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)"/>
+      <arg name="max_vel" value="$(arg max_vel)"/>
+      <arg name="max_acc" value="$(arg max_acc)"/>
     </include>
 
 
     <!--Rviz Node-->
     <group if="$(arg rviz)">
       <node name="$(anon rviz)" pkg="rviz" type="rviz"
-            args="-d $(find racecar_rviz)/rviz/one_navigation.rviz" output="screen" ns="$(arg r_name)"/>
+            args="-d $(find racecar_rviz)/rviz/one_navigation.rviz" output="screen" ns="/$(arg r_name)"/>
     </group>
 
 

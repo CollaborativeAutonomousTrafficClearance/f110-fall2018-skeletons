@@ -29,8 +29,8 @@ def getKey():
    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, settings)
    return key
 
-speed = 0.5
-turn = 0.25
+speed = rospy.get_param('max_vel')
+turn = speed/2
 
 def vels(speed,turn):
   return "currently:\tspeed %s\tturn %s " % (speed,turn)

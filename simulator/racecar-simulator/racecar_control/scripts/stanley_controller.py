@@ -12,7 +12,7 @@ import os
 # CONSTANTS #
 #############
 
-VELOCITY = 0.15 # m/s
+VELOCITY = rospy.get_param('max_vel') # m/s
 
 ###########
 # GLOBALS #

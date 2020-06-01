@@ -118,27 +118,35 @@
 
 
     <!--The Move Base Node-->
-    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)1">
       <arg name="r_name" value="$(arg r_name)1"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
+      <arg name="max_vel" value="$(arg max_vel1)"/>
+      <arg name="max_acc" value="$(arg max_acc1)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
-    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)2">
       <arg name="r_name" value="$(arg r_name)2"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)2"/>
+      <arg name="max_vel" value="$(arg max_vel2)"/>
+      <arg name="max_acc" value="$(arg max_acc2)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
-    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)3">
       <arg name="r_name" value="$(arg r_name)3"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)3"/>
+      <arg name="max_vel" value="$(arg max_vel3)"/>
+      <arg name="max_acc" value="$(arg max_acc3)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
-    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)4">
       <arg name="r_name" value="$(arg r_name)4"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)4"/>
+      <arg name="max_vel" value="$(arg max_vel4)"/>
+      <arg name="max_acc" value="$(arg max_acc4)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
