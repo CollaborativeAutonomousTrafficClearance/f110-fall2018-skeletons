@@ -5,13 +5,17 @@
   <arg name="r_name" default="racecar"/>
   <arg name="vesc_ns" default="/vesc"/>
 
+  <arg name="r_type" default="racecar"/>
   <arg name="r_num" default="1"/>
   <arg name="vis_laser" default="true"/>
-  <arg name="r_type" default="racecar"/>
 
   <arg name="x_pos" default="0"/>
   <arg name="y_pos" default="-0.775"/>
   <arg name="z_pos" default="0.05"/>
+
+  <arg name="max_vel" default="0.5"/>
+  <arg name="max_acc" default="0.1"/>
+
   <arg name="ctrl_method" default=""/>
 
 

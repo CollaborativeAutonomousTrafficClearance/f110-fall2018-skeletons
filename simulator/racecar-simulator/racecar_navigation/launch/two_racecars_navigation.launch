@@ -13,12 +13,16 @@
     <arg name="x_pos1" default="-2.5"/>
     <arg name="y_pos1" default="0.2625"/>
     <arg name="z_pos1" default="0.05"/>
+    <arg name="max_vel1" default="0.5"/>
+    <arg name="max_acc1" default="0.1"/>
     <arg name="ctrl_method1" default=""/>
 
     <arg name="r_type2" default="racecar"/>
     <arg name="x_pos2" default="2.5"/>
     <arg name="y_pos2" default="-0.7875"/>
     <arg name="z_pos2" default="0.05"/>
+    <arg name="max_vel2" default="0.5"/>
+    <arg name="max_acc2" default="0.1"/>
     <arg name="ctrl_method2" default=""/>
 
     <arg name="comm_range" default="10"/>
@@ -38,12 +42,16 @@
       <arg name="x_pos1" value="$(arg x_pos1)"/>
       <arg name="y_pos1" value="$(arg y_pos1)"/>
       <arg name="z_pos1" value="$(arg z_pos1)"/>
+      <arg name="max_vel1" value="$(arg max_vel1)"/>
+      <arg name="max_acc1" value="$(arg max_acc1)"/>
       <arg name="ctrl_method1" value="$(arg ctrl_method1)"/>
 
       <arg name="r_type2" value="$(arg r_type2)"/>
       <arg name="x_pos2" value="$(arg x_pos2)"/>
       <arg name="y_pos2" value="$(arg y_pos2)"/>
       <arg name="z_pos2" value="$(arg z_pos2)"/>
+      <arg name="max_vel2" value="$(arg max_vel2)"/>
+      <arg name="max_acc2" value="$(arg max_acc2)"/>
       <arg name="ctrl_method2" value="$(arg ctrl_method2)"/>
 
       <arg name="comm_range" value="$(arg comm_range)"/>
