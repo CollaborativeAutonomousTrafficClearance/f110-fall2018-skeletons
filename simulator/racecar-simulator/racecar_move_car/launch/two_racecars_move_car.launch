@@ -79,7 +79,7 @@
     </include>
 
 
-    <!--The Move Base Node-->
+    <!--The Move Car Node-->
     <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)1">
       <arg name="r_name" value="$(arg r_name)1"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
