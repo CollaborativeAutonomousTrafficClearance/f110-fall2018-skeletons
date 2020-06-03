@@ -58,6 +58,8 @@ add_message_files(
    FILES
    states.srv
    reward.srv
+   startSim.srv
+   resetSim.srv
 #   Service1.srv
 #   Service2.srv
   )
