@@ -2,11 +2,11 @@
 import rospy
 import threading
 import numpy as np
-import os ####
-import sys ####
-import optparse ####
+import os
+import sys
 #from Config import *  # TODO TODO: Make sure this is the first one imported, to have random.seed() used before any actual randomness is assigned
-#from std_msgs.msg import Bool ####
+from std_msgs.msg import Bool
+from racecar_rl_environments.msg import areWeDone
 from rl_algorithms.single_agent_qlearning import *
 from env_communicators.basic_env_comm import *
 
@@ -38,20 +38,20 @@ class SAQLMaster:
         if rospy.has_param('test_mode_on'):
             self.test_mode_on = rospy.get_param('test_mode_on')
         else:
-            self.test_mode_on = True
+            self.test_mode_on = False
         ####
-        self.max_time_steps_per_episode = rospy.get_param('max_time_steps_per_episode')
+        #self.max_time_steps_per_episode = rospy.get_param('max_time_steps_per_episode')
         self.max_num_episodes = rospy.get_param('max_num_episodes')
-        self.every_n_episodes = rospy.get_param('every_n_episodes')
-        self.every_n_steps = rospy.get_param('every_n_steps')
-        self.print_reward_every_episode = rospy.get_param('print_reward_every_episode')
+        self.every_n_episodes = rospy.get_param('vis_update_params/every_n_episodes')
+        self.every_n_steps = rospy.get_param('vis_update_params/every_n_steps')
+        self.print_reward_every_episode = rospy.get_param('vis_update_params/print_reward_every_episode')
         ####
         if rospy.has_param('environment'):
             if (rospy.get_param('environment') != "basic_environment"):
                 rospy.loginfo("Unknown environment is requested. Will use the basic_environment instead.")
-            self.ENV_COMM = env(vehicles_list) #TODO TODO: env class - give it max time max_time_steps_per_episode
+            self.ENV_COMM = BasicEnvComm()
         else:
-            self.ENV_COMM = env(vehicles_list) #TODO TODO: env class - give it max time max_time_steps_per_episode
+            self.ENV_COMM = BasicEnvComm()
             rospy.loginfo("Using the default environment: basic_environment.")
         ####
         if rospy.has_param('rl_algorithm'):
@@ -63,7 +63,7 @@ class SAQLMaster:
             rospy.loginfo("Using the default RL algorithm: single_agent_qlearning.")
         ####
 
-    # Input data is ####### message from topic TODO TODO: ####################
+    # Input data is areWeDone message from topic /RL/is_active_or_episode_done
     def isActivatedOrDoneCallback(self, inputMsg):
         if (self.test_mode_on == True):
             if ((self.is_activated == False) and (inputMsg.is_activated == True)):
@@ -79,12 +79,15 @@ class SAQLMaster:
 
     def execute(self):
 
+        resp = self.ENV_COMM.startSim(1, 1)
+        if (resp.is_successful == False):
+            raise Exception("Could not start simulation. Terminating.")
+            return
+
         if (self.test_mode_on == True):
             self.test_model();
 
         else:
-
-            #TODO TODO: #######initialize new episode, reset env
             self.is_episode_done = 0
 
             episode_reward, episode_reward_list = self.episode()
@@ -94,7 +97,11 @@ class SAQLMaster:
 
             while(self.episode_num < self.max_num_episodes):
 
-                #TODO TODO: #######initialize new episode, reset env
+                resp = self.ENV_COMM.resetSim()
+                if (resp.is_successful == False):
+                    raise Exception("Could not reset simulation. Terminating.")
+                    return
+
                 self.episode_num += 1
                 self.is_episode_done = 0
 
@@ -104,7 +111,7 @@ class SAQLMaster:
 
         
             # Save Q-table after episodes ended:
-            self.RL_ALGO.save_q_table()
+            self.RL_ALGO.save_q_table() #TODO TODO: see when to call so that we have a constantly updated qtable saved
 
 
     def test_model(self):
@@ -131,7 +138,7 @@ class SAQLMaster:
             #              2:    E X E C U T E      A C T I O N                 #
             # ----------------------------------------------------------------- #
 
-            executed_action = self.RL_ALGO.take_action()
+            executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)
 
             # 3: Store state after taking action
             agent_state_after = self.ENV_COMM.getState(self.robot_num)
@@ -184,12 +191,12 @@ class SAQLMaster:
                         episode_end_reason = "max time steps"
                     elif (self.is_episode_done == 2):
                         episode_end_reason = "ambulance goal"
-                    elif (self.is_episode_done == 3):  # TODO: #TOFIX: What should be the state here?
+                    elif (self.is_episode_done == 3):
                         episode_end_reason = "agent goal"
                     else:
                         episode_end_reason = "unknown"
-                        rospy.loginfo("Episode: %d done is True = %d but reason not known!", self.episode_num, self.is_episode_done)
 
+                    rospy.loginfo("Episode: %d ended fot the reason: %s", self.episode_num, episode_end_reason)
                     rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
                     rospy.loginfo(agent_state_after) #TODO TODO: ####################
                 break
@@ -204,26 +211,24 @@ class SAQLMaster:
             #                   E X E C U T E      A C T I O N                  #
             # ----------------------------------------------------------------- #
 
-            executed_action = self.RL_ALGO.take_action()
+            executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)
             step += 1
 
             # 3.3: measurements and if we are done check
             agent_state_after = self.ENV_COMM.getState(self.robot_num)
 
-            #self.is_episode_done = self.ENV_COMM.are_we_done(full_state = Proudhon.full_state, step_number=step) #TODO TODO: ####################
-
             # 3.4: reward last step's chosen action
-            reward = self.ENV_COMM.calc_reward(amb_last_velocity, self.is_episode_done, step) #TODO TODO: ####################
+            reward = self.ENV_COMM.calc_reward(agent_state_before.amb_vel, execution_time)
             episode_reward += reward  # for history
             episode_reward_list.append(reward)  # for history
 
             # 3.5: update q table using backward reward logic
             self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after,
-                                      agent_state_before)
+                                      agent_state_before) #TODO TODO: revise inputs with RL algo
 
             if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
                 rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
-                rospy.loginfo(agent_state_after) #TODO: ####################
+                rospy.loginfo(agent_state_after) #TODO TODO: ####################
 
             if (self.is_episode_done): # DO NOT REMOVE THIS (IT BREAKS IF WE ARE DONE)
                 if(self.episode_num % self.every_n_episodes == 0):
@@ -231,14 +236,14 @@ class SAQLMaster:
                         episode_end_reason = "max time steps"
                     elif (self.is_episode_done == 2):
                         episode_end_reason = "ambulance goal"
-                    elif (self.is_episode_done == 3):  # TODO: #TOFIX: What should be the state here?
+                    elif (self.is_episode_done == 3):
                         episode_end_reason = "agent goal"
                     else:
                         episode_end_reason = "unknown"
-                        rospy.loginfo("Episode: %d done is True = %d but reason not known!", self.episode_num, self.is_episode_done)
 
+                    rospy.loginfo("Episode: %d ended fot the reason: %s", self.episode_num, episode_end_reason)
                     rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
-                    rospy.loginfo(agent_state_after) #TODO: ####################
+                    rospy.loginfo(agent_state_after) #TODO TODO: ####################
                 break
 
         # Episode End
@@ -248,7 +253,7 @@ class SAQLMaster:
                              np.exp(-self.RL_ALGO.decay_rate * self.episode_num)
 
         if (self.episode_num % self.every_n_episodes == 0):
-            rospy.loginfo("Episode: %d. FinalCumReward: %f. OldEpsilon: %f. NewEpsilon: %f.", self.episode_num, episode_reward, old_epsilon, self.RL_ALGO.epsilon) #TODO: print episode end reason 
+            rospy.loginfo("Episode: %d. FinalCumReward: %f. OldEpsilon: %f. NewEpsilon: %f.", self.episode_num, episode_reward, old_epsilon, self.RL_ALGO.epsilon)
 
 
         if(self.print_reward_every_episode and self.episode_num % self.every_n_episodes):
@@ -265,7 +270,7 @@ if __name__ == "__main__":
 
     saqlm.execute()
 
-    # subscribe to 'TODO: ####################'
-    rospy.Subscriber('/#############', SMTH, saqlm.isActivatedOrDoneCallback, queue_size=2)
+    # subscribe to /RL/is_active_or_episode_done
+    rospy.Subscriber('/RL/is_active_or_episode_done', areWeDone, saqlm.isActivatedOrDoneCallback, queue_size=2)
 
     rospy.spin()
