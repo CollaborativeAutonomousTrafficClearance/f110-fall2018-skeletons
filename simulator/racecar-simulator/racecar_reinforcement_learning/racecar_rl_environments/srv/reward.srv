@@ -1,5 +1,4 @@
-
-float32 amb_vel_1
-float32 amb_vel_2
+float32 amb_last_velocity
+float32 execution_time
 ---
 float32 reward

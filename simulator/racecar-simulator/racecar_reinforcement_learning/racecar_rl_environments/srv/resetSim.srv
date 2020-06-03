@@ -1,0 +1,3 @@
+bool reset_env
+---
+bool is_successful
