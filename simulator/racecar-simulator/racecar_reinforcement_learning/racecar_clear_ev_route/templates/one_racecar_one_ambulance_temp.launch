@@ -14,19 +14,19 @@
     <arg name="x_pos1" default="{{data.agent_start_x}}"/>
     <arg name="y_pos1" default="{{data.agent_start_y}}"/>
     <arg name="z_pos1" default="0.05"/>
-    <arg name="max_vel1" default="0.5"/>
-    <arg name="max_acc1" default="0.0167"/>
+    <arg name="max_vel1" default="{{data.agent_max_vel}}"/>
+    <arg name="max_acc1" default="{{data.agent_max_acc}}"/>
     <arg name="ctrl_method1" default=""/>
 
     <arg name="r_type2" default="ambulance"/>
     <arg name="x_pos2" default="{{data.EV_start_x}}"/>
     <arg name="y_pos2" default="{{data.EV_start_y}}"/>
     <arg name="z_pos2" default="0.05"/>
-    <arg name="max_vel2" default="1"/>
-    <arg name="max_acc2" default="0.0333"/>
+    <arg name="max_vel2" default="{{data.EV_max_vel}}"/>
+    <arg name="max_acc2" default="{{data.EV_max_acc}}"/>
     <arg name="ctrl_method2" default="_krauss_model"/>
 
-    <arg name="comm_range" default="10"/>
+    <arg name="comm_range" default="{{data.comm_range}}"/>
     <arg name="use_comm_layer" default="true"/>
 
 
