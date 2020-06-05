@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 import rospy
-from racecar_clear_ev_route.srv import RLPolicyActionService, RLPolicyActionServiceRequest, RLPolicyActionServiceResponse
 import numpy as np
 import random
 from std_msgs.msg import Header
+from racecar_clear_ev_route.srv import RLPolicyActionService, RLPolicyActionServiceRequest, RLPolicyActionServiceResponse
+from racecar_rl_environments.srv import states, statesRequest, statesResponse
+
 
 class observed_state:
     def __init__(self):
@@ -21,8 +23,14 @@ class single_agent_qlearning:
         self.environment_init = environment_init
         
         #window fixed parameters
-        rel_amb_y_min = self.environment_init.rel_amb_y_min
-        rel_amb_y_max = self.environment_init.rel_amb_y_max
+        self.rel_amb_y_min = self.environment_init.rel_amb_y_min
+        self.rel_amb_y_max = self.environment_init.rel_amb_y_max
+        self.amb_vel_min = self.environment_init.amb_vel_min
+        self.amb_vel_max = self.environment_init.amb_vel_max
+        self.agent_vel_min = self.environment_init.agent_vel_min
+        self.agent_vel_max = self.environment_init.agent_vel_max
+        self.amb_acc = self.environment_init.amb_acc
+        self.agent_acc = self.environment_init.agent_acc
 
         #RL Actions
         self.Actions = ["change_left", "change_right", "acc", "no_acc", "dec"]
@@ -43,7 +51,8 @@ class single_agent_qlearning:
         if(load_q_table or self.test_mode_on): # load_q_table if we are testing or we want to load it
             self.q_table = self.load_q_table()
         else:
-            self.q_table = np.zeros((6, 3, 11, 3, 58, 5))
+            #self.q_table = np.zeros((6, 3, 11, 3, 58, 5))
+            self.q_table = np.zeros((6, 3, 11, 3, (self.rel_amb_y_max + 1 + self.rel_amb_y_min), 5))
             #Initialize all the Q table with -1000 as a flag for unvisited action
             self.q_table.fill(-1000)
             
@@ -57,12 +66,16 @@ class single_agent_qlearning:
             self.decay_rate = algo_params['decay_rate']
         
         #new and last observed states parameters 
-        self.new_observed_state_for_this_agent = observed_state()
-        self.last_observed_state_for_this_agent = observed_state()
+        #self.new_observed_state_for_this_agent = observed_state()
+        #self.last_observed_state_for_this_agent = observed_state()
+        self.new_observed_state_for_this_agent = statesResponse()
+        self.last_observed_state_for_this_agent = statesResponse()
 
         #new and last obesrved states INDICES parameters
-        self.new_observed_state_INDEX_for_this_agent = observed_state()
-        self.last_observed_state_INDEX_for_this_agent = observed_state()
+        #self.new_observed_state_INDEX_for_this_agent = observed_state()
+        #self.last_observed_state_INDEX_for_this_agent = observed_state()
+        self.new_observed_state_INDEX_for_this_agent = statesResponse()
+        self.last_observed_state_INDEX_for_this_agent = statesResponse()
         
         #RL engagement and disengagement
         self.RLdisengage = False  
@@ -139,13 +152,13 @@ class single_agent_qlearning:
             action_request_acc = 0
         elif(self.Action == 'acc'):
             action_request_control_action = 0
-            action_request_acc = 0.1
+            action_request_acc = self.agent_acc
         elif(self.Action == 'no_acc'):
             action_request_control_action = 0
             action_request_acc = 0
         elif(self.Action == 'dec'):
             action_request_control_action = 0
-            action_request_acc = -0.1
+            action_request_acc = -self.agent_acc
         
         action_request_header = rospy.Time.now()
         deactivateRL = False
@@ -207,7 +220,7 @@ class single_agent_qlearning:
                 rospy.wait_for_service('move_car/RL/RLPolicyActionService')
                 print "Service call failed: %s"%e
     
-    def update_q_table(self, chosen_action, reward):
+    def update_q_table(self, chosen_action, reward, new_observed_state_for_this_agent):
         
         if(self.test_mode_on):  # do not update q_table if test_mode is on ! just use it.
             pass
@@ -220,6 +233,7 @@ class single_agent_qlearning:
             a': new action we are expected to choose if we exploit on s' (new state)
             '''
             action_index = self.action_string_to_index_dict[chosen_action]
+            self.update_new_observed_state_for_this_agent(new_observed_state_for_this_agent)
 
             # OLD STATE VARIABLES:
             agent_vel_index = self.last_observed_state_INDEX_for_this_agent.agent_vel
