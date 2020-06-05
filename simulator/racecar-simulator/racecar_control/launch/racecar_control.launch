@@ -6,6 +6,11 @@
   <arg name="vesc_ns" default="/vesc"/>
   <arg name="r_num" default="1"/>
 
+  <arg name="max_vel" default="0.5"/>
+  <arg name="max_acc" default="0.1"/>
+
+  <param name="max_vel" value="$(arg max_vel)"/>
+
   <!-- Load joint controller configurations from YAML file to parameter server -->
   <!--<rosparam file="$(find racecar_control)/config/racecar_control.yaml" command="load"/>-->
   <rosparam file="$(find racecar_control)/config/racecar_control.yaml" command="load" ns="/$(arg r_name)"/>

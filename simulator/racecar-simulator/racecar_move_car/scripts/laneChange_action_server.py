@@ -76,10 +76,10 @@ class LaneChange:
 
         ''' Variables needed by Krauss model '''
         self.t_r = 1 # estimated driver reaction time ~ 1 sec
-        self.max_vel = 0.5 # maximum ego vehicle velocity allowed ################## rospy.get_param('')
-        self.max_acc = 0.1 # maximum ego vehicle acceleration allowed ############## rospy.get_param('')
-        self.max_dec = -0.1 # maximum ego vehicle deceleration allowed ############## rospy.get_param('')
-        self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used ################## rospy.get_param('')
+        self.max_vel = rospy.get_param('max_vel') # maximum ego vehicle velocity allowed
+        self.max_acc = rospy.get_param('max_acc') # maximum ego vehicle acceleration allowed
+        #self.max_dec = -self.max_acc # maximum ego vehicle deceleration allowed
+        self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used - value could be increased than actual to enforce a greater minimal gap between vehicles
         self.del_time = 1 # chosen delta time between iterations ################## rospy.get_param('')
 
         self.pub = rospy.Publisher('drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
@@ -149,13 +149,13 @@ class LaneChange:
         
 
     # Calculates the maximum velocity the rear vehicle could have in order to keep a safe distance between it and the leading vehicle
-    def calcMaxSafeVel(self, rear_x_pos, rear_vel, lead_x_pos, lead_vel):
+    def calcMaxSafeVel(self, rear_x_pos, rear_vel, rear_max_acc, lead_x_pos, lead_vel):
 
         lead_gap = lead_x_pos - rear_x_pos - self.vehicle_length
 
-        safe_vel = lead_vel + ((lead_gap - (lead_vel * self.t_r))/(self.t_r + ((lead_vel + rear_vel)/(2*self.max_acc))))
+        safe_vel = lead_vel + ((lead_gap - (lead_vel * self.t_r))/(self.t_r + ((lead_vel + rear_vel)/(2*rear_max_acc))))
 
-        #max_possible_safe_vel = min(self.max_vel, (rear_vel + self.max_acc*self.del_time), safe_vel)
+        #max_possible_safe_vel = min(rear_max_vel, (rear_vel + rear_max_acc*self.del_time), safe_vel)
 
         return safe_vel
 
@@ -239,6 +239,10 @@ class LaneChange:
         givenVehicle_initial_POS = self.my_vehicle_ids.ids[vehicleIndex].x_position
         givenVehicle_initial_VEL = self.my_vehicle_ids.ids[vehicleIndex].velocity
 
+        # get max vel and acc of the vehicle
+        givenVehicle_max_VEL = self.my_vehicle_ids.ids[vehicleIndex].max_vel
+        givenVehicle_max_ACC = self.my_vehicle_ids.ids[vehicleIndex].max_acc
+
         # test if the input vehicle is vehicle B #
 
         # assume vehicle applies maximum deceleration during all timesteps the ego vehicle takes to reach centerline. (Before the center line)
@@ -246,9 +250,9 @@ class LaneChange:
         hypoth_POS = givenVehicle_initial_POS 
 
         for i in range(0,LCnoOfTS_half,1):
-            temp_VEL = hypoth_VEL + (self.max_dec * self.del_time)
+            temp_VEL = hypoth_VEL + ((-givenVehicle_max_ACC) * self.del_time)
             if(temp_VEL >= 0):
-                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*self.max_dec*self.del_time*self.del_time
+                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*(-givenVehicle_max_ACC)*self.del_time*self.del_time
                 hypoth_VEL = temp_VEL
             else:
                 hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + 0) * self.del_time)
@@ -265,13 +269,13 @@ class LaneChange:
         hypoth_POS = givenVehicle_initial_POS
 
         for i in range(0,LCnoOfTS_half,1):
-            temp_VEL = hypoth_VEL + (self.max_acc * self.del_time)
-            if (temp_VEL <= self.max_vel):
-                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*self.max_acc*self.del_time*self.del_time
+            temp_VEL = hypoth_VEL + (givenVehicle_max_ACC * self.del_time)
+            if (temp_VEL <= givenVehicle_max_VEL):
+                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*givenVehicle_max_ACC*self.del_time*self.del_time
                 hypoth_VEL = temp_VEL
             else:
-                hypoth_POS = hypoth_POS +  (0.5 * (hypoth_VEL + self.max_vel)*self.del_time)
-                hypoth_VEL = self.max_vel
+                hypoth_POS = hypoth_POS +  (0.5 * (hypoth_VEL + givenVehicle_max_VEL)*self.del_time)
+                hypoth_VEL = givenVehicle_max_VEL
 
         # check if input vehicle is SURELY A
         if (hypoth_POS < lc_centerline):
@@ -293,7 +297,11 @@ class LaneChange:
         
         # get the initial positon and velocity for the vehicle A
         vehicle_A_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_A].velocity  
-        vehicle_A_initial_POS = self.my_vehicle_ids.ids[self.vehicle_A].x_position  
+        vehicle_A_initial_POS = self.my_vehicle_ids.ids[self.vehicle_A].x_position 
+
+        # get max vel and acc of the vehicle A
+        vehicle_A_max_VEL = self.my_vehicle_ids.ids[self.vehicle_A].max_vel
+        vehicle_A_max_ACC = self.my_vehicle_ids.ids[self.vehicle_A].max_acc 
 
         # calculate number of timesteps taken by ego vehicle to reach centerline 
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
@@ -305,16 +313,16 @@ class LaneChange:
         hypoth_POS = vehicle_A_initial_POS 
 
         for i in range(0,LCnoOfTS_half,1):
-            temp_VEL = hypoth_VEL + (self.max_acc * self.del_time)
-            if (temp_VEL <= self.max_vel):
-                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*self.max_acc*self.del_time*self.del_time
+            temp_VEL = hypoth_VEL + (vehicle_A_max_ACC * self.del_time)
+            if (temp_VEL <= vehicle_A_max_VEL):
+                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*vehicle_A_max_ACC*self.del_time*self.del_time
                 hypoth_VEL = temp_VEL
             else:
-                hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + self.max_vel)*self.del_time)
-                hypoth_VEL = self.max_vel
+                hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + vehicle_A_max_VEL)*self.del_time)
+                hypoth_VEL = vehicle_A_max_VEL
 
         # check whether the relative velocity between ego vehicle and vehicle A is safe (using krauss model)
-        max_possible_safe_VEL = self.calcMaxSafeVel(hypoth_POS, hypoth_VEL,lc_centerline, self.lc_vel)
+        max_possible_safe_VEL = self.calcMaxSafeVel(hypoth_POS, hypoth_VEL, vehicle_A_max_ACC, lc_centerline, self.lc_vel)
         if (hypoth_VEL > max_possible_safe_VEL):
             return False
         else:
@@ -337,6 +345,10 @@ class LaneChange:
         # get the initial positon and velocity for the vehicle B
         vehicle_B_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_B].velocity  
         vehicle_B_initial_POS = self.my_vehicle_ids.ids[self.vehicle_B].x_position 
+
+        # get max vel and acc of the vehicle B
+        vehicle_B_max_VEL = self.my_vehicle_ids.ids[self.vehicle_B].max_vel
+        vehicle_B_max_ACC = self.my_vehicle_ids.ids[self.vehicle_B].max_acc
         
         # calculate number of timesteps taken by ego vehicle to reach centerline
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
@@ -348,9 +360,9 @@ class LaneChange:
         hypoth_POS = vehicle_B_initial_POS 
 
         for i in range(0,LCnoOfTS_half,1):
-            temp_VEL = hypoth_VEL + (self.max_dec * self.del_time)
+            temp_VEL = hypoth_VEL + ((-vehicle_B_max_ACC) * self.del_time)
             if(temp_VEL >= 0):
-                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*self.max_dec*self.del_time*self.del_time
+                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*(-vehicle_B_max_ACC)*self.del_time*self.del_time
                 hypoth_VEL = temp_VEL
             else:
                 hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + 0) * self.del_time)
@@ -371,9 +383,9 @@ class LaneChange:
         vehicle_B_final_POS = hypoth_POS 
 
         for i in range(0,LCnoOfTS_half,1):
-            temp_VEL = vehicle_B_final_VEL + (self.max_dec * self.del_time)
+            temp_VEL = vehicle_B_final_VEL + ((-vehicle_B_max_ACC) * self.del_time)
             if (temp_VEL >= 0):
-                vehicle_B_final_POS = vehicle_B_final_POS + (vehicle_B_final_VEL * self.del_time) + 0.5*self.max_dec*self.del_time*self.del_time
+                vehicle_B_final_POS = vehicle_B_final_POS + (vehicle_B_final_VEL * self.del_time) + 0.5*(-vehicle_B_max_ACC)*self.del_time*self.del_time
                 vehicle_B_final_VEL = temp_VEL
             else:
                 vehicle_B_final_POS = vehicle_B_final_POS + (0.5 * (vehicle_B_final_VEL + 0) * self.del_time)
@@ -384,7 +396,7 @@ class LaneChange:
             return False 
         else:
             # check whether the relative velocity between ego vehicle and vehicle B is safe (using krauss model)
-            max_possible_safe_VEL = self.calcMaxSafeVel(vehicle_ego_final_POS, vehicle_ego_final_VEL, vehicle_B_final_POS, vehicle_B_final_VEL)
+            max_possible_safe_VEL = self.calcMaxSafeVel(vehicle_ego_final_POS, vehicle_ego_final_VEL, self.max_acc, vehicle_B_final_POS, vehicle_B_final_VEL)
             if (vehicle_ego_final_VEL > max_possible_safe_VEL):
                 return False
             else:
@@ -405,6 +417,10 @@ class LaneChange:
         vehicle_D_initial_VEL = self.my_vehicle_ids.ids[self.vehicle_D].velocity  
         vehicle_D_initial_POS = self.my_vehicle_ids.ids[self.vehicle_D].x_position
 
+        # get max vel and acc of the vehicle D
+        vehicle_D_max_VEL = self.my_vehicle_ids.ids[self.vehicle_D].max_vel
+        vehicle_D_max_ACC = self.my_vehicle_ids.ids[self.vehicle_D].max_ac
+
         # calculate number of timesteps taken by ego vehicle to reach centerline 
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
         LCnoOfTS_half = math.ceil(LCnoOfTS_half)
@@ -415,9 +431,9 @@ class LaneChange:
         hypoth_POS = vehicle_D_initial_POS
 
         for i in range(0,LCnoOfTS_half,1):
-            temp_VEL = hypoth_VEL + (self.max_dec * self.del_time)
+            temp_VEL = hypoth_VEL + ((-vehicle_D_max_ACC) * self.del_time)
             if (temp_VEL >= 0):
-                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*self.max_dec*self.del_time*self.del_time
+                hypoth_POS = hypoth_POS + (hypoth_VEL * self.del_time) + 0.5*(-vehicle_D_max_ACC)*self.del_time*self.del_time
                 hypoth_VEL = temp_VEL
             else:
                 hypoth_POS = hypoth_POS + (0.5 * (hypoth_VEL + 0) * self.del_time)

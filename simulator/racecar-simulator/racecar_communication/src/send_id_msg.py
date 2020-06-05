@@ -14,6 +14,9 @@ class SendIDMsg:
         self.footprint = Polygon()
 
         self.robot_num = rospy.get_param('robot_num')
+        self.r_type = rospy.get_param('r_type')
+        self.max_vel = rospy.get_param('max_vel')
+        self.max_acc = rospy.get_param('max_acc')
 
         self.pub = rospy.Publisher('/id_msgs', IDStamped, queue_size=50) # publisher for 'IDStamped' message
 
@@ -42,12 +45,16 @@ class SendIDMsg:
         idMsg.header.frame_id = "map";
 
         idMsg.robot_num = self.robot_num
-        idMsg.id.footprint = self.footprint
 
-        idMsg.id.velocity = self.velocity
+        idMsg.id.type.data = self.r_type
         idMsg.id.x_position = self.x_position
         idMsg.id.y_position = self.y_position
         idMsg.id.lane_num = self.lane_num
+        idMsg.id.footprint = self.footprint
+
+        idMsg.id.velocity = self.velocity
+        idMsg.id.max_vel = self.max_vel
+        idMsg.id.max_acc = self.max_acc
 
         self.pub.publish(idMsg)
 

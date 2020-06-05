@@ -3,6 +3,7 @@ project(racecar_navigation)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
+add_definitions(--std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -16,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   tf
   tf2_ros
+  move_base_msgs
+  roscpp
 )
 
 ## System dependencies are found with CMake's conventions
@@ -120,10 +123,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-#include_directories(
-# include
-#  ${catkin_INCLUDE_DIRS}
-#)
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
@@ -182,6 +185,9 @@ catkin_package(
 #   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
 #   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
 # )
+
+add_executable(racecar_navigation scripts/simple_navigation_goals.cpp)
+target_link_libraries(racecar_navigation ${catkin_LIBRARIES})
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/

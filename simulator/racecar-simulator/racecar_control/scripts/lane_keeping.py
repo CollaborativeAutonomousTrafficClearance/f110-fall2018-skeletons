@@ -436,6 +436,9 @@ class LaneKeeping:
         
         self.yaw = 0 # vehicle's yaw
         self.velocity =  0.1 # velocity of vehicle (m/s)
+        
+        self.max_vel = rospy.get_param('max_vel') # max velocity of vehicle (m/s)
+
         self.pub = rospy.Publisher('/drive_parameters', drive_param, queue_size=1) # publisher for 'drive_parameters' (speed and steering angle)
 
         self.line_lt = Line()         # line on the left of the lane
@@ -447,7 +450,7 @@ class LaneKeeping:
         
         :param odomMsg: the float32 message sent through the topic: '/desired_vel'
         '''
-        self.velocity = velMsg.data
+        self.velocity = max(min(velMsg.data, self.max_vel), 0)
 
 
     def odometryCallback(self, odomMsg):

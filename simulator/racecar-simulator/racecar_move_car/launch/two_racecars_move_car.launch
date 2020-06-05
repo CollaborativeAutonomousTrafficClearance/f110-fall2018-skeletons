@@ -2,8 +2,10 @@
 <launch>
     
     <!--Arguments-->
+    <arg name="launch_world" default="true"/>
     <arg name="world_name" default="threeLanes" />
     <arg name="gui" default="true" />
+    <arg name="rviz" default="true"/>
 
     <arg name="r_name" default="racecar"/>
     <arg name="vesc_ns" default="/vesc"/>
@@ -13,12 +15,16 @@
     <arg name="x_pos1" default="0"/>
     <arg name="y_pos1" default="0.2625"/>
     <arg name="z_pos1" default="0.05"/>
+    <arg name="max_vel1" default="0.5"/>
+    <arg name="max_acc1" default="0.1"/>
     <arg name="ctrl_method1" default=""/>
 
     <arg name="r_type2" default="racecar"/>
     <arg name="x_pos2" default="2"/>
     <arg name="y_pos2" default="-0.2625"/>
     <arg name="z_pos2" default="0.05"/>
+    <arg name="max_vel2" default="0.5"/>
+    <arg name="max_acc2" default="0.1"/>
     <arg name="ctrl_method2" default=""/>
 
     <arg name="comm_range" default="10"/>
@@ -27,6 +33,7 @@
 
     <!--Launching Gazebo With The Racecar-->
     <include file="$(find racecar_gazebo)/launch/two_racecars.launch">
+      <arg name="launch_world" value="$(arg launch_world)" />
       <arg name="world_name" value="$(arg world_name)" />
       <arg name="gui" value="$(arg gui)" />
 
@@ -38,12 +45,16 @@
       <arg name="x_pos1" value="$(arg x_pos1)"/>
       <arg name="y_pos1" value="$(arg y_pos1)"/>
       <arg name="z_pos1" value="$(arg z_pos1)"/>
+      <arg name="max_vel1" value="$(arg max_vel1)"/>
+      <arg name="max_acc1" value="$(arg max_acc1)"/>
       <arg name="ctrl_method1" value="$(arg ctrl_method1)"/>
 
       <arg name="r_type2" value="$(arg r_type2)"/>
       <arg name="x_pos2" value="$(arg x_pos2)"/>
       <arg name="y_pos2" value="$(arg y_pos2)"/>
       <arg name="z_pos2" value="$(arg z_pos2)"/>
+      <arg name="max_vel2" value="$(arg max_vel2)"/>
+      <arg name="max_acc2" value="$(arg max_acc2)"/>
       <arg name="ctrl_method2" value="$(arg ctrl_method2)"/>
 
       <arg name="comm_range" value="$(arg comm_range)"/>
@@ -68,23 +79,28 @@
     </include>
 
 
-    <!--The Move Base Node-->
-    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
+    <!--The Move Car Node-->
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)1">
       <arg name="r_name" value="$(arg r_name)1"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)1"/>
+      <arg name="max_vel" value="$(arg max_vel1)"/>
+      <arg name="max_acc" value="$(arg max_acc1)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
-    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch">
+    <include file="$(find racecar_move_car)/launch/racecar_move_car.launch" ns="/$(arg r_name)2">
       <arg name="r_name" value="$(arg r_name)2"/>
       <arg name="vesc_ns" value="$(arg vesc_ns)2"/>
+      <arg name="max_vel" value="$(arg max_vel2)"/>
+      <arg name="max_acc" value="$(arg max_acc2)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
 
 
     <!--Rviz Node-->
-    <node name="$(anon rviz)" pkg="rviz" type="rviz"
-          args="-d $(find racecar_rviz)/rviz/two_navigation.rviz" output="screen"/>
-
+    <group if="$(arg rviz)">
+      <node name="$(anon rviz)" pkg="rviz" type="rviz"
+            args="-d $(find racecar_rviz)/rviz/two_navigation.rviz" output="screen"/>
+    </group>
 
 </launch>

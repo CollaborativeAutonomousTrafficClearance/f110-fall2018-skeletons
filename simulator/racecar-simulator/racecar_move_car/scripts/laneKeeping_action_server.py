@@ -474,7 +474,7 @@ class LaneKeeping:
         '''
 
         if (self.active == 1):
-        	self.velocity = velMsg.data
+            self.velocity = velMsg.data
 
 
     def odometryCallback(self, odomMsg):
