@@ -23,14 +23,14 @@ class single_agent_qlearning:
         self.environment_init = environment_init
         
         #window fixed parameters
-        self.rel_amb_y_min = self.environment_init.rel_amb_y_min
-        self.rel_amb_y_max = self.environment_init.rel_amb_y_max
-        self.amb_vel_min = self.environment_init.amb_vel_min
-        self.amb_vel_max = self.environment_init.amb_vel_max
-        self.agent_vel_min = self.environment_init.agent_vel_min
-        self.agent_vel_max = self.environment_init.agent_vel_max
-        self.amb_acc = self.environment_init.amb_acc
-        self.agent_acc = self.environment_init.agent_acc
+        self.rel_amb_y_min = self.environment_init['rel_amb_y_min']
+        self.rel_amb_y_max = self.environment_init['rel_amb_y_max']
+        self.amb_vel_min = self.environment_init['amb_vel_min']
+        self.amb_vel_max = self.environment_init['amb_vel_max']
+        self.agent_vel_min = self.environment_init['agent_vel_min']
+        self.agent_vel_max = self.environment_init['agent_vel_max']
+        self.amb_acc = self.environment_init['amb_acc']
+        self.agent_acc = self.environment_init['agent_acc']
 
         #RL Actions
         self.Actions = ["change_left", "change_right", "acc", "no_acc", "dec"]
@@ -270,7 +270,7 @@ class single_agent_qlearning:
                 action_index] = q_of_s_a_value
 
     
-    def save_q_table(self, variables_folder_path = VARIABLES_FOLDER):
+    def save_q_table(self, variables_folder_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),"saved_variables")):
         if(self.test_mode_on):
             pass  # do not save
         else:
