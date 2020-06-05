@@ -6,6 +6,7 @@ import random
 import roslaunch
 import jinja2
 from std_msgs.msg import Bool
+from gazebo_msgs.srv import DeleteModel
 from racecar_rl_environments.msg import areWeDone
 from racecar_rl_environments.srv import states, statesRequest, statesResponse, reward, rewardRequest, rewardResponse, startSim, startSimRequest, startSimResponse, resetSim, resetSimRequest, resetSimResponse
 from racecar_communication.msg import ID, IDsCombined
@@ -26,8 +27,6 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
 
         self.last_vehicle_ids = self.initIdsCombinedMsg()
         self.EV_index = -1
-        self.emer_max_speed = 1
-        self.emer_max_accel = 0.0333
 
         self.num_of_agents = -1
         self.num_of_EVs = -1
@@ -46,6 +45,11 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
 
     def getParams(self):
 
+        ####
+        if rospy.has_param('r_name'):
+            self.r_name = rospy.get_param('r_name')
+        else:
+            self.r_name = "racecar"
         ####
         if rospy.has_param('reward/max_final_reward'):
             self.max_final_reward = rospy.get_param('reward/max_final_reward')
@@ -72,6 +76,11 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
         else:
             self.give_final_reward = False #whether to give a final reward or not
         ####
+        if rospy.has_param('communicaion_range'):
+            self.comm_range = rospy.get_param('communicaion_range')
+        else:
+            self.comm_range = 24
+        ####
         if rospy.has_param('ambulance/amb_start_x'):
             self.amb_start_x = rospy.get_param('ambulance/amb_start_x')
         else:
@@ -82,15 +91,31 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
         else:
             self.amb_goal_x = 50
         ####
-        if rospy.has_param('ambulance/rel_amb_y_min'): #TODO: map to comm range
-            self.rel_amb_y_min = rospy.get_param('ambulance/rel_amb_y_min')
+        if rospy.has_param('ambulance/amb_max_vel'):
+            self.emer_max_speed = rospy.get_param('ambulance/amb_max_vel')
         else:
-            self.rel_amb_y_min = -41
+            self.emer_max_speed = 1
+        ####
+        if rospy.has_param('ambulance/amb_max_acc'):
+            self.emer_max_accel = rospy.get_param('ambulance/amb_max_acc')
+        else:
+            self.emer_max_accel = 0.0333
+        ####
+        if rospy.has_param('ambulance/rel_amb_y_min'):
+            if (rospy.get_param('ambulance/rel_amb_y_min') < 0):
+                self.rel_amb_y_min = - min(self.comm_range, abs(rospy.get_param('ambulance/rel_amb_y_min')))
+            else
+                self.rel_amb_y_min = min(self.comm_range, abs(rospy.get_param('ambulance/rel_amb_y_min')))
+        else:
+            self.rel_amb_y_min = - min(self.comm_range, 24)
         ####
         if rospy.has_param('ambulance/rel_amb_y_max'):
-            self.rel_amb_y_max = rospy.get_param('ambulance/rel_amb_y_max')
+            if (rospy.get_param('ambulance/rel_amb_y_max') < 0):
+                self.rel_amb_y_min = - min(self.comm_range, abs(rospy.get_param('ambulance/rel_amb_y_max')))
+            else
+                self.rel_amb_y_min = min(self.comm_range, abs(rospy.get_param('ambulance/rel_amb_y_max')))
         else:
-            self.rel_amb_y_max = 16
+            self.rel_amb_y_min = min(self.comm_range, 9)
 
     def initLaunchFiles(self):
         self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
@@ -161,11 +186,7 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
         rospy.sleep(5)
 
         ####
-        one_racecar_one_ambulance_args = dict()
-        one_racecar_one_ambulance_args['agent_start_x'] = random.randint(self.amb_start_x - self.rel_amb_y_min, ((self.amb_goal_x - self.amb_start_x)/2))
-        one_racecar_one_ambulance_args['agent_start_y'] = self.genRandLanePos()
-        one_racecar_one_ambulance_args['EV_start_x'] = self.amb_start_x
-        one_racecar_one_ambulance_args['EV_start_y'] = self.genRandLanePos()
+        one_racecar_one_ambulance_args = self.genTemplateArgs()
 
         with open(self.one_racecar_one_ambulance[0], "w") as fp:
             fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
@@ -191,6 +212,14 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
         resp = statesResponse()
 
         if (req.reset_env == True):
+
+            delete_model_client = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
+            rospy.wait_for_service('gazebo/delete_model')
+
+            for agent_index in range((self.num_of_agents + self.num_of_EVs)):
+                delete_model_client(self.r_name + str(agent_index + 1))
+            rospy.sleep(20)
+
             self.launch_one_racecar_one_ambulance.shutdown()
             rospy.sleep(60)
 
@@ -199,11 +228,7 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
             self.is_activated = False
 
             ####
-            one_racecar_one_ambulance_args = dict()
-            one_racecar_one_ambulance_args['agent_start_x'] = random.randint(self.amb_start_x - self.rel_amb_y_min, ((self.amb_goal_x - self.amb_start_x)/2))
-            one_racecar_one_ambulance_args['agent_start_y'] = self.genRandLanePos()
-            one_racecar_one_ambulance_args['EV_start_x'] = self.amb_start_x
-            one_racecar_one_ambulance_args['EV_start_y'] = self.genRandLanePos()
+            one_racecar_one_ambulance_args = self.genTemplateArgs()
 
             with open(self.one_racecar_one_ambulance[0], "w") as fp:
                 fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
@@ -220,6 +245,40 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
         else:
             resp.is_successful = False
             return resp
+
+    def genTemplateArgs(self):
+
+        one_racecar_one_ambulance_args = dict()
+
+        # agent args
+        #amb_max_vel_coord = self.amb_start_x + ((self.emer_max_speed*self.emer_max_speed)/(2*self.emer_max_accel)) #TODO
+
+        one_racecar_one_ambulance_args['agent_start_x'] = random.randint(self.amb_start_x - self.rel_amb_y_min, ((self.amb_goal_x - self.amb_start_x)/2))
+        one_racecar_one_ambulance_args['agent_start_y'] = self.genRandLanePos()
+
+        if rospy.has_param('agent/agent_max_vel'):
+            agent_max_vel = rospy.get_param('agent/agent_max_vel')
+        else:
+            agent_max_vel = 0.5
+
+        if rospy.has_param('agent/agent_max_acc'):
+            agent_max_acc = rospy.get_param('agent/agent_max_acc')
+        else:
+            agent_max_acc = 0.0167
+
+        one_racecar_one_ambulance_args['agent_max_vel'] = agent_max_vel
+        one_racecar_one_ambulance_args['agent_max_acc'] = agent_max_acc
+
+        # EV args
+        one_racecar_one_ambulance_args['EV_start_x'] = self.amb_start_x
+        one_racecar_one_ambulance_args['EV_start_y'] = self.genRandLanePos()
+        one_racecar_one_ambulance_args['EV_max_vel'] = self.emer_max_speed
+        one_racecar_one_ambulance_args['EV_max_acc'] = self.emer_max_accel
+
+        # communication range
+        one_racecar_one_ambulance_args['comm_range'] = self.self.comm_range
+
+        return one_racecar_one_ambulance_args
 
     def genRandLanePos(self):
         '''  
