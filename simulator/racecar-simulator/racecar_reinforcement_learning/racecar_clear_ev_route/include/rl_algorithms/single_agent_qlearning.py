@@ -14,7 +14,6 @@ class observed_state:
         self.amb_lane = -1
         self.rel_amb_y = -1
         
-
 class single_agent_qlearning:
     def __init__(self, environment_init, algo_params=dict(), load_q_table = False, test_mode_on = False):
         self.test_mode_on = test_mode_on
@@ -146,7 +145,7 @@ class single_agent_qlearning:
             action_request_acc = 0
         elif(self.Action == 'dec'):
             action_request_control_action = 0
-            action_request_acc = -1
+            action_request_acc = -0.1
         
         action_request_header = rospy.Time.now()
         deactivateRL = False
@@ -256,6 +255,18 @@ class single_agent_qlearning:
             self.q_table[agent_vel_index][agent_lane_index][amb_vel_index][amb_lane_index][rel_amb_y_index][
                 action_index] = q_of_s_a_value
 
+    
+    def save_q_table(self, variables_folder_path = VARIABLES_FOLDER):
+        if(self.test_mode_on):
+            pass  # do not save
+        else:
+            np.save(variables_folder_path+'/Q_TABLE.npy', self.q_table)
+
+
+    def load_q_table(self, variables_folder_path = VARIABLES_FOLDER):
+        #rospy.loginfo("Loaded Q_TABLE from {variables_folder_path + '/Q_TABLE.npy'}")
+        return np.load(variables_folder_path+'/Q_TABLE.npy')
+
     '''
         Q                #Q_table. Multi-dimensional np.ndarray, each dimension: either state partial assignment or action (string action -> integer)
                           transformation is defined via action_to_string_dict
@@ -272,27 +283,7 @@ class single_agent_qlearning:
                         Q_table size, is therefore = 6 * 3 * 11 *3 * 58 * 5 = 172260 ~ 170K .
                             Note that some Q(s,a) pairs will be infeasible and hence will not be trained/updated.
         '''
-    
-    def save_q_table(self, variables_folder_path = VARIABLES_FOLDER):
-        if(self.test_mode_on):
-            pass  # do not save
-        else:
-            np.save(variables_folder_path+'/Q_TABLE.npy', self.q_table)
-
-
-    def load_q_table(self, variables_folder_path = VARIABLES_FOLDER):
-        #rospy.loginfo("Loaded Q_TABLE from {variables_folder_path + '/Q_TABLE.npy'}")
-        return np.load(variables_folder_path+'/Q_TABLE.npy')
-
-    
-
-
-
-
-
-
-
-            
+          
 
 
 

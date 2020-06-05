@@ -5,17 +5,17 @@ from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Bool
-from racecar_navigation.msg import BoolWithHeader
+from racecar_navigation.msg import BoolStamped
 import message_filters
 
 
-pub = rospy.Publisher('move_car/nav/goalReached', BoolWithHeader, queue_size=10)
+pub = rospy.Publisher('move_car/nav/goalReached', BoolStamped, queue_size=10)
 
 class Reached:
     def __init__(self):
         self.nav_goal_position = Point()
         self.nav_feedback_position = Point()
-        self.GoalReached = BoolWithHeader()
+        self.GoalReached = BoolStamped()
         self.last_nav_goal_position = Point()
         self.goal_reached = False
         
@@ -25,11 +25,10 @@ class Reached:
         h = self.GoalReached.header
         h.stamp = rospy.Time.now()
         if self.goal_reached == False:
-            if abs(self.nav_goal_position.x - self.nav_feedback_position.x) <= 1:
-                if abs(self.nav_goal_position.y - self.nav_feedback_position.y) <= 1:
-                    self.GoalReached.Bool = True
-                    pub.publish(self.GoalReached)
-                    self.goal_reached = True
+            if (self.nav_goal_position.x < self.nav_feedback_position.x):
+                self.GoalReached.Bool = True
+                pub.publish(self.GoalReached)
+                self.goal_reached = True
         
             else:        
                 self.GoalReached.Bool = False
@@ -44,9 +43,6 @@ class Reached:
         self.last_nav_goal_position = self.nav_goal_position
         self.nav_goal_position = msg.pose.position
         self.goal_reached = False
-
-   
-        
 
         
 def listener():

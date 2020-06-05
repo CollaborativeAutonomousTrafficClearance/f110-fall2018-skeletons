@@ -55,16 +55,16 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
    FILES
    Lanes_Info.msg
-   BoolWithHeader.msg
+   BoolStamped.msg
    NavAction.msg
 )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
+ add_service_files(
+   FILES
+   CustomLocalPlannerFeedback.srv
 #   Service2.srv
-# )
+ )
 
 ##Generate actions in the 'action' folder
 # add_action_files(
@@ -120,10 +120,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(
+#include_directories(
 # include
-  ${catkin_INCLUDE_DIRS}
-)
+#  ${catkin_INCLUDE_DIRS}
+#)
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
