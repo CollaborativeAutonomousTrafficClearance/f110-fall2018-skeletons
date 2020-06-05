@@ -269,6 +269,9 @@ class ClearEVRouteBasicEnv: #currently only handles single agent + ambulance
         one_racecar_one_ambulance_args['agent_max_vel'] = agent_max_vel
         one_racecar_one_ambulance_args['agent_max_acc'] = agent_max_acc
 
+        one_racecar_one_ambulance_args['agent_goal_x'] = self.amb_goal_x
+        one_racecar_one_ambulance_args['agent_goal_y'] = one_racecar_one_ambulance_args['agent_start_y']
+
         # EV args
         one_racecar_one_ambulance_args['EV_start_x'] = self.amb_start_x
         one_racecar_one_ambulance_args['EV_start_y'] = self.genRandLanePos()
