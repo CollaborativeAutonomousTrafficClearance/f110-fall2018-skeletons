@@ -223,8 +223,7 @@ class SAQLMaster:
             episode_reward_list.append(reward)  # for history
 
             # 3.5: update q table using backward reward logic
-            self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after,
-                                      agent_state_before) #TODO TODO: revise inputs with RL algo
+            self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after) #TODO TODO: revise inputs with RL algo
 
             if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
                 rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
