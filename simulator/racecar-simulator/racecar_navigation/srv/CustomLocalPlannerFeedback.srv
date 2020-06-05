@@ -1,0 +1,7 @@
+#Request
+Header header
+bool laneChangeActive
+
+---
+#Response
+bool adjusted
