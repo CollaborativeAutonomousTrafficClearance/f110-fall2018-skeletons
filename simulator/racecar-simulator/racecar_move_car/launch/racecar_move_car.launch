@@ -21,7 +21,7 @@
     
 
     <!-- Determine the required navigation action -->
-    <node pkg="racecar_navigation" type="chosen_nav_action.py" name="chosen_nav_action" output="screen" ns="/$(arg r_name)"/>
+    <node pkg="racecar_navigation" type="customLocalPlanner.py" name="customLocalPlanner" output="screen" ns="/$(arg r_name)"/>
 
 
     <!-- Determine whether goal has been reached -->
