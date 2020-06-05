@@ -21,14 +21,13 @@ def movebase_client():
     goal = MoveBaseGoal()
     goal.target_pose.header.frame_id = "map"
     goal.target_pose.header.stamp = rospy.Time.now()
-    # Move 0.5 meters forward along the x axis of the "map" coordinate frame 
-    for i in range(0,4,1): # this for loop may exist or not --- sayed
-        goal.target_pose.pose.position.x = 1
-        goal.target_pose.pose.position.y = -0.25
-        goal.target_pose.pose.position.z = 0.05
 
-        # No rotation of the mobile base frame w.r.t. map frame
-        goal.target_pose.pose.orientation.w = 1.0
+    goal.target_pose.pose.position.x = rospy.get_param('goal_x')
+    goal.target_pose.pose.position.y = rospy.get_param('goal_y')
+    goal.target_pose.pose.position.z = 0.05
+
+    # No rotation of the mobile base frame w.r.t. map frame
+    goal.target_pose.pose.orientation.w = 1.0
 
     
 
