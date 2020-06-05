@@ -57,9 +57,9 @@ class SAQLMaster:
         if rospy.has_param('rl_algorithm'):
             if (rospy.get_param('rl_algorithm') != "single_agent_qlearning"):
                 rospy.loginfo("Unknown RL algorithm is requested. Will use the single_agent_qlearning algorithm instead.")
-            self.RL_ALGO = RLAlgorithm(self.ENV_COMM, algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), self.test_mode_on) #TODO TODO: RLAlgorithm class, perhaps pass only the needed vars instead of ENV_COMM
+            self.RL_ALGO = RLAlgorithm(environment_init = self.ENV_COMM.getWindowParams(), algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), self.test_mode_on)
         else:
-            self.RL_ALGO = RLAlgorithm(self.ENV_COMM, algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), self.test_mode_on) #TODO TODO: RLAlgorithm class, perhaps pass only the needed vars instead of ENV_COMM
+            self.RL_ALGO = RLAlgorithm(environment_init = self.ENV_COMM.getWindowParams(), algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), self.test_mode_on)
             rospy.loginfo("Using the default RL algorithm: single_agent_qlearning.")
         ####
 
@@ -223,7 +223,7 @@ class SAQLMaster:
             episode_reward_list.append(reward)  # for history
 
             # 3.5: update q table using backward reward logic
-            self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after) #TODO TODO: revise inputs with RL algo
+            self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after)
 
             if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
                 rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
