@@ -2,7 +2,7 @@ environment: "basic_environment"
 rl_algorithm: "single_agent_qlearning"
 
 
-max_num_episodes: 50000
+max_num_episodes: 5
 
 vis_update_params:
   every_n_episodes: 1 # Print episode info every_n_episodes

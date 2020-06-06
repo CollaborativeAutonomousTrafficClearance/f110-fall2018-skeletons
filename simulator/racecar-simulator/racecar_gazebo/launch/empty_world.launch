@@ -3,7 +3,7 @@
 
   <!--Arguments-->
   <arg name="world_name" default="threeLanes" />
-  <arg name="gui" default="False" />
+  <arg name="gui" default="True" />
 
   <!--Gazebo World-->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">

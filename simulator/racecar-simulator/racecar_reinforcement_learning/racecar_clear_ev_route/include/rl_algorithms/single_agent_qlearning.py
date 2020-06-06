@@ -2,6 +2,7 @@
 import rospy
 import numpy as np
 import random
+import os
 from std_msgs.msg import Header
 from racecar_clear_ev_route.srv import RLPolicyActionService, RLPolicyActionServiceRequest, RLPolicyActionServiceResponse
 from racecar_rl_environments.srv import states, statesRequest, statesResponse
@@ -16,8 +17,11 @@ class observed_state:
         self.amb_lane = -1
         self.rel_amb_y = -1
         
-class single_agent_qlearning:
+class SingleAgentQlearning:
     def __init__(self, environment_init, algo_params=dict(), load_q_table = False, test_mode_on = False):
+
+        rospy.loginfo("Initializing Single Agent Qlearning.")
+
         self.test_mode_on = test_mode_on
         #Constants for the environment
         self.environment_init = environment_init
@@ -41,7 +45,7 @@ class single_agent_qlearning:
             "no_acc": 3,
             "dec": 4
         }  # Must maintain order in Actions
-        actions_indices = []   
+        self.actions_indices = []   
         for act in self.Actions:
             self.actions_indices.append(self.action_string_to_index_dict[act])
         
@@ -52,7 +56,7 @@ class single_agent_qlearning:
             self.q_table = self.load_q_table()
         else:
             #self.q_table = np.zeros((6, 3, 11, 3, 58, 5))
-            self.q_table = np.zeros((6, 3, 11, 3, (self.rel_amb_y_max + 1 + self.rel_amb_y_min), 5))
+            self.q_table = np.zeros((6, 3, 11, 3, (abs(self.rel_amb_y_max) + 1 + abs(self.rel_amb_y_min)), 5))
             #Initialize all the Q table with -1000 as a flag for unvisited action
             self.q_table.fill(-1000)
             
@@ -81,7 +85,9 @@ class single_agent_qlearning:
         self.RLdisengage = False  
 
         #establishing a connection with the Action Execution Server (Move Car Action Client)
-        rospy.wait_for_service('move_car/RL/RLPolicyActionService') 
+        ##rospy.wait_for_service('move_car/RL/RLPolicyActionService') #TODO: NEED TO MOVE IT SOMEWHERE ELSE BECAUSE InITIALLY IT IS NOT AVAILABLE
+
+        rospy.loginfo("Finished initializing Single Agent Qlearning.")
     
     #updates the new observed state parameters  
     def update_new_observed_state_for_this_agent(self, new_observed_state_for_this_agent):
@@ -277,7 +283,7 @@ class single_agent_qlearning:
             np.save(variables_folder_path+'/Q_TABLE.npy', self.q_table)
 
 
-    def load_q_table(self, variables_folder_path = VARIABLES_FOLDER):
+    def load_q_table(self, variables_folder_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),"saved_variables")):
         #rospy.loginfo("Loaded Q_TABLE from {variables_folder_path + '/Q_TABLE.npy'}")
         return np.load(variables_folder_path+'/Q_TABLE.npy')
 

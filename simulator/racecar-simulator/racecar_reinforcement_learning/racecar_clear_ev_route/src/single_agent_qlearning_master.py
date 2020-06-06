@@ -21,7 +21,8 @@ train_activity_lock.acquire()
 class SAQLMaster:
     def __init__(self):
         
-        self.is_activated = False
+        rospy.loginfo("Initializing Single Agent Q-Learning Master.")
+        self.is_activated = True
         self.is_episode_done = 0
         self.episode_num = 0
 
@@ -29,9 +30,15 @@ class SAQLMaster:
         self.total_reward_per_episode = []  # list of doubles
         self.reward_history_per_episode = []  # list of lists
 
+        # subscribe to /RL/is_active_or_episode_done
+        rospy.Subscriber('/RL/is_active_or_episode_done', areWeDone, self.isActivatedOrDoneCallback, queue_size = 2)
+
         self.getParams()
+        rospy.loginfo("Finished initializing Single Agent Q-Learning Master.")
         
     def getParams(self):
+
+        rospy.loginfo("Getting parameters in Single Agent Q-Learning Master.")
 
         self.robot_num = rospy.get_param('robot_num')
         ####
@@ -57,9 +64,9 @@ class SAQLMaster:
         if rospy.has_param('rl_algorithm'):
             if (rospy.get_param('rl_algorithm') != "single_agent_qlearning"):
                 rospy.loginfo("Unknown RL algorithm is requested. Will use the single_agent_qlearning algorithm instead.")
-            self.RL_ALGO = RLAlgorithm(environment_init = self.ENV_COMM.getWindowParams(), algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), self.test_mode_on)
+            self.RL_ALGO = SingleAgentQlearning(environment_init = self.ENV_COMM.getWindowParams(), algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), test_mode_on = self.test_mode_on)
         else:
-            self.RL_ALGO = RLAlgorithm(environment_init = self.ENV_COMM.getWindowParams(), algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), self.test_mode_on)
+            self.RL_ALGO = SingleAgentQlearning(environment_init = self.ENV_COMM.getWindowParams(), algo_params = rospy.get_param('q_learning_params'), load_q_table = rospy.get_param('load_q_table'), test_mode_on = self.test_mode_on)
             rospy.loginfo("Using the default RL algorithm: single_agent_qlearning.")
         ####
 
@@ -71,7 +78,7 @@ class SAQLMaster:
             self.is_activated = inputMsg.is_activated
         else:
             if (self.is_activated == False):
-                if ((inputMsg.is_activated == True) || (inputMsg.is_episode_done != 0)):
+                if ((inputMsg.is_activated == True) or (inputMsg.is_episode_done != 0)):
                     train_activity_lock.release()
             self.is_activated = inputMsg.is_activated
             self.is_episode_done = inputMsg.is_episode_done
@@ -79,6 +86,7 @@ class SAQLMaster:
 
     def execute(self):
 
+        rospy.loginfo("Starting simulation.")
         resp = self.ENV_COMM.startSim(1, 1)
         if (resp.is_successful == False):
             raise Exception("Could not start simulation. Terminating.")
@@ -91,27 +99,31 @@ class SAQLMaster:
             self.is_episode_done = 0
 
             episode_reward, episode_reward_list = self.episode()
-            self.total_reward_per_episode.append(episode_reward)
-            self.reward_history_per_episode.append(episode_reward_list)
+            rospy.loginfo("Episode Number: %d", self.episode_num)
+            ##self.total_reward_per_episode.append(episode_reward)
+            ##self.reward_history_per_episode.append(episode_reward_list)
 
 
             while(self.episode_num < self.max_num_episodes):
 
-                resp = self.ENV_COMM.resetSim()
-                if (resp.is_successful == False):
-                    raise Exception("Could not reset simulation. Terminating.")
-                    return
+                rospy.loginfo("Resetting simulation.")
+                ##resp = self.ENV_COMM.resetSim()
+                ##if (resp.is_successful == False):
+                ##    raise Exception("Could not reset simulation. Terminating.")
+                ##    return
 
                 self.episode_num += 1
                 self.is_episode_done = 0
 
                 episode_reward, episode_reward_list = self.episode()
-                self.total_reward_per_episode.append(episode_reward)
-                self.reward_history_per_episode.append(episode_reward_list)
+                rospy.loginfo("Episode Number: %d", self.episode_num)
+                ##self.total_reward_per_episode.append(episode_reward)
+                ##self.reward_history_per_episode.append(episode_reward_list)
 
         
             # Save Q-table after episodes ended:
-            self.RL_ALGO.save_q_table() #TODO TODO: see when to call so that we have a constantly updated qtable saved
+            rospy.loginfo("Saving Q-table")
+            ##self.RL_ALGO.save_q_table() #TODO TODO: see when to call so that we have a constantly updated qtable saved
 
 
     def test_model(self):
@@ -168,21 +180,24 @@ class SAQLMaster:
 
         ########################
         # measure initial state
-        agent_state = self.ENV_COMM.getState(self.robot_num)
+        rospy.loginfo("Getting agent's state before taking action.")
+        ##agent_state = self.ENV_COMM.getState(self.robot_num)
 
         ########################
         # 2: MAIN LOOP
 
         if (self.episode_num % self.every_n_episodes == 0):
             rospy.loginfo("Episode: %d. Epsilon: %f. State:", self.episode_num, self.RL_ALGO.epsilon)
-            rospy.loginfo(agent_state) #TODO TODO: ####################
+            ##rospy.loginfo(agent_state) #TODO TODO: ####################
 
         while (1):
+
+            rospy.loginfo("Step: %d.", step)
 
             ########################
             if (self.is_activated == False):
                 rospy.loginfo("Disengaging the RL model for agent %d in episode %d because the EV is outside the agent's window.", self.robot_num, self.episode_num)
-                self.RL_ALGO.disengage()
+                ##self.RL_ALGO.disengage()
                 train_activity_lock.acquire()
 
             if (self.is_episode_done): # DO NOT REMOVE THIS (IT BREAKS IF WE ARE DONE)
@@ -196,14 +211,15 @@ class SAQLMaster:
                     else:
                         episode_end_reason = "unknown"
 
-                    rospy.loginfo("Episode: %d ended fot the reason: %s", self.episode_num, episode_end_reason)
+                    rospy.loginfo("Episode: %d ended for the reason: %s", self.episode_num, episode_end_reason)
                     rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
-                    rospy.loginfo(agent_state_after) #TODO TODO: ####################
+                    ##rospy.loginfo(agent_state_after) #TODO TODO: ####################
                 break
             ########################                
 
             # 3.1: Store state before taking action
-            agent_state_before = self.ENV_COMM.getState(self.robot_num)
+            rospy.loginfo("Getting agent's state before taking action.")
+            ##agent_state_before = self.ENV_COMM.getState(self.robot_num)
 
             # ----------------------------------------------------------------- #
             # 3.2:   M O V E      O N E      S I M U L A T I O N       S T E P  #
@@ -211,23 +227,27 @@ class SAQLMaster:
             #                   E X E C U T E      A C T I O N                  #
             # ----------------------------------------------------------------- #
 
-            executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)
+            rospy.loginfo("Taking action.")
+            ##executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)
             step += 1
 
             # 3.3: measurements and if we are done check
-            agent_state_after = self.ENV_COMM.getState(self.robot_num)
+            rospy.loginfo("Getting agent's state after taking action.")
+            ##agent_state_after = self.ENV_COMM.getState(self.robot_num)
 
             # 3.4: reward last step's chosen action
-            reward = self.ENV_COMM.calc_reward(agent_state_before.amb_vel, execution_time)
-            episode_reward += reward  # for history
-            episode_reward_list.append(reward)  # for history
+            rospy.loginfo("Calculating reward.")
+            ##reward = self.ENV_COMM.calc_reward(agent_state_before.amb_vel, execution_time)
+            ##episode_reward += reward  # for history
+            ##episode_reward_list.append(reward)  # for history
 
             # 3.5: update q table using backward reward logic
-            self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after)
+            rospy.loginfo("Updating qtable.")
+            ##self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after)
 
-            if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
-                rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
-                rospy.loginfo(agent_state_after) #TODO TODO: ####################
+            ##if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
+                ##rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
+                ##rospy.loginfo(agent_state_after) #TODO TODO: ####################
 
             if (self.is_episode_done): # DO NOT REMOVE THIS (IT BREAKS IF WE ARE DONE)
                 if(self.episode_num % self.every_n_episodes == 0):
@@ -240,9 +260,9 @@ class SAQLMaster:
                     else:
                         episode_end_reason = "unknown"
 
-                    rospy.loginfo("Episode: %d ended fot the reason: %s", self.episode_num, episode_end_reason)
+                    rospy.loginfo("Episode: %d ended for the reason: %s", self.episode_num, episode_end_reason)
                     rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
-                    rospy.loginfo(agent_state_after) #TODO TODO: ####################
+                    ##rospy.loginfo(agent_state_after) #TODO TODO: ####################
                 break
 
         # Episode End
@@ -262,14 +282,11 @@ class SAQLMaster:
 
 
 if __name__ == "__main__":
-    rospy.init_node('single_agent_qlearning_master')
+    rospy.init_node('single_agent_qlearning_master', disable_signals=True)
 
     # create object from class SAQLMaster
     saqlm = SAQLMaster()
 
     saqlm.execute()
-
-    # subscribe to /RL/is_active_or_episode_done
-    rospy.Subscriber('/RL/is_active_or_episode_done', areWeDone, saqlm.isActivatedOrDoneCallback, queue_size=2)
 
     rospy.spin()

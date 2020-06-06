@@ -5,6 +5,7 @@ import numpy as np
 import random
 import roslaunch
 import jinja2
+import threading
 from std_msgs.msg import Bool
 from gazebo_msgs.srv import DeleteModel
 from racecar_rl_environments.msg import areWeDone
@@ -12,23 +13,31 @@ from racecar_rl_environments.srv import states, statesRequest, statesResponse, r
 from racecar_communication.msg import ID, IDsCombined, IDStamped
 from nav_msgs.msg import Odometry
 
+# Locks to synchronize with main thread
+toMainThread_lock = threading.Lock()
+toMainThread_lock.acquire()
+
+fromMainThread_lock = threading.Lock()
+fromMainThread_lock.acquire()
 
 class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single agent + one ambulance --  could be extended
 
     def __init__(self):
 
+        rospy.loginfo("Initializing Clear EV Route Basic Environment.")
+
         # set service callbacks
-        rospy.Service('states', states, self.statesServerCallback)
-        rospy.Service('reward', reward, self.rewardServerCallback)
-        rospy.Service('startSim', startSim, self.startSimCallback)
-        rospy.Service('resetSim', resetSim, self.resetSimCallback)
+        rospy.Service('/states', states, self.statesServerCallback)
+        rospy.Service('/reward', reward, self.rewardServerCallback)
+        rospy.Service('/startSim', startSim, self.startSimCallback)
+        rospy.Service('/resetSim', resetSim, self.resetSimCallback)
 
         # subscribe to /id_msgs to receive IDs of all vehicles
-        rospy.Subscriber('/id_msgs', IDStamped, self.idMsgsCallback, queue_size=50)
+        rospy.Subscriber('/id_msgs', IDStamped, self.idMsgsCallback, queue_size = 50)
 
         # publisher on /RL/is_active_or_episode_done to indicate when the RL model should be deactivated or when the episode is done
         # NOTE: there should be a publisher for each agent in the environment -- edit if more agents are added
-        self.pub = rospy.Publisher('/RL/is_active_or_episode_done', areWeDone)
+        self.pub = rospy.Publisher('/RL/is_active_or_episode_done', areWeDone, queue_size = 2)
 
         self.last_vehicle_ids = self.initIdsCombinedMsg() # last received array of vehicle IDs
         self.EV_index = -1 # index of the emergency vehicle in the IDs array
@@ -39,6 +48,9 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         self.is_episode_done = 0 # int: 0: episode not finished, 1: episode finished because reached max simulation time, 2: episode finished because ambulance reached goal, 3: episode finished because agent reached goal
         self.is_activated = False # bool: if RL model should be activated
+       
+        self.isStartSimRequested = False
+        self.isResetSimRequested = False
 
         self.episode_start_time = -1 # time at which episode starts
         self.optimal_time = 10000 # initialization of optimal episode time -- overwritten later
@@ -50,6 +62,9 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         # initialize launch files variables
         self.initLaunchFiles()
 
+        rospy.loginfo("Finished initializing Clear EV Route Basic Environment.")
+
+        self.waitForLaunchNodesRequests()
 
     # Initializes IDsCombined message 
     def initIdsCombinedMsg(self):
@@ -65,6 +80,8 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
     # Gets all parameters
     def getParams(self):
+
+        rospy.loginfo("Getting parameters in Clear EV Route Basic Environment.")
 
         ## Name of vehicles ## 
         if rospy.has_param('r_name'):
@@ -155,6 +172,9 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
     # Initializes launch files variables
     def initLaunchFiles(self):
+
+        rospy.loginfo("Initializing launch files variables in Clear EV Route Basic Environment.")
+
         self.uuid = roslaunch.rlutil.get_or_generate_uuid(None, False)
         roslaunch.configure_logging(self.uuid)
 
@@ -187,6 +207,20 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         self.one_racecar_one_ambulance = ['racecar_clear_ev_route', 'one_racecar_one_ambulance.launch']
         self.one_racecar_one_ambulance = roslaunch.rlutil.resolve_launch_arguments(self.one_racecar_one_ambulance)
 
+    def waitForLaunchNodesRequests(self):
+
+        while (1):
+            toMainThread_lock.acquire()
+
+            if (self.isStartSimRequested == True):
+                self.startSim()
+                self.isStartSimRequested == False
+                fromMainThread_lock.release()
+            elif (self.isResetSimRequested == True):
+                self.resetSim()
+                self.isResetSimRequested == False
+                fromMainThread_lock.release()
+
 
     def genTemplateArgs(self):
 
@@ -194,7 +228,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         # agent args
 
-        one_racecar_one_ambulance_args['agent_start_x'] = random.randint(-18.5, 12) #TODO: (LATER) let min and max position depend on EV's starting/ening position and vehicles' max vel/acc
+        one_racecar_one_ambulance_args['agent_start_x'] = random.randint(-18, 12) #TODO: (LATER) let min and max position depend on EV's starting/ening position and vehicles' max vel/acc # current is -18.5 to 12 but rounded for simplicity
         one_racecar_one_ambulance_args['agent_start_y'] = self.genRandLanePos()
 
 
@@ -211,7 +245,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         one_racecar_one_ambulance_args['EV_max_acc'] = self.emer_max_accel
 
         # communication range
-        one_racecar_one_ambulance_args['comm_range'] = self.self.comm_range
+        one_racecar_one_ambulance_args['comm_range'] = self.comm_range
 
         return one_racecar_one_ambulance_args
 
@@ -235,9 +269,67 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
            return -0.7875
 
 
+    def startSim(self):
+
+        self.launch_empty_world = roslaunch.parent.ROSLaunchParent(self.uuid, self.empty_world, force_screen=True, verbose=True)
+        self.launch_empty_world.start()
+        rospy.sleep(20)
+
+        ####
+        one_racecar_one_ambulance_args = self.genTemplateArgs()
+
+        with open(self.one_racecar_one_ambulance[0], "w") as fp:
+            fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
+
+        self.episode_start_time = rospy.Time.now()
+
+        self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
+        self.launch_one_racecar_one_ambulance.start()
+        rospy.sleep(5)
+
+        ####
+        ##self.launch_rviz = roslaunch.parent.ROSLaunchParent(self.uuid, self.rviz, force_screen=True, verbose=True)
+        ##self.launch_rviz.start()
+
+        rospy.sleep(60)
+
+        self.episode_start_time = rospy.Time.now()
+
+    
+    def resetSim(self, req):
+
+        delete_model_client = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
+        rospy.wait_for_service('gazebo/delete_model')
+
+        for agent_index in range((self.num_of_agents + self.num_of_EVs)):
+            delete_model_client(self.r_name + str(agent_index + 1))
+        rospy.sleep(20)
+
+        self.launch_one_racecar_one_ambulance.shutdown()
+        rospy.sleep(60)
+
+        self.last_vehicle_ids = self.initIdsCombinedMsg()
+        self.is_episode_done = 0
+        self.is_activated = False
+
+        ####
+        one_racecar_one_ambulance_args = self.genTemplateArgs()
+
+        with open(self.one_racecar_one_ambulance[0], "w") as fp:
+            fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
+
+        self.episode_start_time = rospy.Time.now()
+
+        self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
+        self.launch_one_racecar_one_ambulance.start()
+        rospy.sleep(60)
+
+        self.episode_start_time = rospy.Time.now()
+
+
     def startSimCallback(self, req):
 
-        resp = statesResponse()
+        resp = startSimResponse()
 
         if (req.num_of_agents != 1):
             raise Exception("Current version only supports ONE SINGLE AGENT. Terminating.")
@@ -254,63 +346,22 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         self.is_episode_done = 0
         self.is_activated = False
 
-        self.launch_empty_world = roslaunch.parent.ROSLaunchParent(self.uuid, self.empty_world, force_screen=True, verbose=True)
-        self.launch_empty_world.start()
-        rospy.sleep(5)
-
-        ####
-        one_racecar_one_ambulance_args = self.genTemplateArgs()
-
-        with open(self.one_racecar_one_ambulance[0], "w") as fp:
-            fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
-
-        self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
-        self.launch_one_racecar_one_ambulance.start()
-        rospy.sleep(5)
-
-        ####
-        self.launch_rviz = roslaunch.parent.ROSLaunchParent(self.uuid, self.rviz, force_screen=True, verbose=True)
-        self.launch_rviz.start()
-
-        rospy.sleep(60)
-
-        self.episode_start_time = rospy.Time.now()
+        self.isStartSimRequested = True
+        toMainThread_lock.release()
+        fromMainThread_lock.acquire()
 
         resp.is_successful = True
         return resp
 
-    
-    def resetSimCallback(self, req):
 
-        resp = statesResponse()
+    def resetSimCallback(self, req):
+        resp = resetSimResponse()
 
         if (req.reset_env == True):
 
-            delete_model_client = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
-            rospy.wait_for_service('gazebo/delete_model')
-
-            for agent_index in range((self.num_of_agents + self.num_of_EVs)):
-                delete_model_client(self.r_name + str(agent_index + 1))
-            rospy.sleep(20)
-
-            self.launch_one_racecar_one_ambulance.shutdown()
-            rospy.sleep(60)
-
-            self.last_vehicle_ids = self.initIdsCombinedMsg()
-            self.is_episode_done = 0
-            self.is_activated = False
-
-            ####
-            one_racecar_one_ambulance_args = self.genTemplateArgs()
-
-            with open(self.one_racecar_one_ambulance[0], "w") as fp:
-                fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
-
-            self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
-            self.launch_one_racecar_one_ambulance.start()
-            rospy.sleep(60)
-
-            self.episode_start_time = rospy.Time.now()
+            self.isResetSimRequested = True
+            toMainThread_lock.release()
+            fromMainThread_lock.acquire()
 
             resp.is_successful = True
             return resp
@@ -345,7 +396,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         return rewardResponse(myreward)
 
 
-    def calc_reward(self, amb_last_velocity, execution_time): #TODO TODO: edit reward to use execution time
+    def calc_reward(self, amb_last_velocity, execution_time):
 
         '''
         :logic: Calculate reward to agent from current state
@@ -416,7 +467,6 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
             # extra check
             elif (self.EV_index != (idMsgs.robot_num - 1)):
                 raise Exception("NUMBER OF EMERGENCY VEHICLES IN ENVIRONMENT IS GREATER THAN EXPECTED!")
-
 
         self.are_we_done()
         self.is_RL_activated()
