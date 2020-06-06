@@ -6,16 +6,6 @@ import os
 from std_msgs.msg import Header
 from racecar_clear_ev_route.srv import RLPolicyActionService, RLPolicyActionServiceRequest, RLPolicyActionServiceResponse
 from racecar_rl_environments.srv import states, statesRequest, statesResponse
-
-
-class observed_state:
-    def __init__(self):
-        #states
-        self.agent_vel = -1
-        self.agent_lane = -1
-        self.amb_vel = -1
-        self.amb_lane = -1
-        self.rel_amb_y = -1
         
 class SingleAgentQlearning:
     def __init__(self, environment_init, algo_params=dict(), load_q_table = False, test_mode_on = False):
@@ -79,9 +69,6 @@ class SingleAgentQlearning:
         
         #RL engagement and disengagement
         self.RLdisengage = False  
-
-        #establishing a connection with the Action Execution Server (Move Car Action Client)
-        ##rospy.wait_for_service('move_car/RL/RLPolicyActionService') #TODO: NEED TO MOVE IT SOMEWHERE ELSE BECAUSE InITIALLY IT IS NOT AVAILABLE
 
         rospy.loginfo("Finished initializing Single Agent Qlearning.")
     
@@ -163,29 +150,13 @@ class SingleAgentQlearning:
         self.last_observed_state_for_this_agent = self.new_observed_state_for_this_agent
         self.last_observed_state_INDEX_for_this_agent = self.new_observed_state_INDEX_for_this_agent
 
-        #update the new observed state for this agent (states and indices)
-        self.new_observed_state_for_this_agent.agent_vel = new_observed_state_for_this_agent[0]
-        self.new_observed_state_for_this_agent.agent_lane = new_observed_state_for_this_agent[1]
-        self.new_observed_state_for_this_agent.amb_vel = new_observed_state_for_this_agent[2]
-        self.new_observed_state_for_this_agent.amb_lane = new_observed_state_for_this_agent[3]
-        self.new_observed_state_for_this_agent.rel_amb_y = np.clip(new_observed_state_for_this_agent[4], self.rel_amb_y_min,
-                            self.rel_amb_y_max)  # rel_amb_y  (16+1+41 = 58): [-41,-40,-39,.....,0,...13,14,15,16]
+        self.new_observed_state_for_this_agent = new_observed_state_for_this_agent
 
-        "If it takes an array, uncomment the following (89) and remove from 81 to 86"
-        #self.new_observed_state_for_this_agent = new_observed_state_for_this_agent
-
-        #getting indices from states
-
-        #velocity #Multiplied by 10 to convert it to indices
-        self.new_observed_state_INDEX_for_this_agent.agent_vel = int(np.round(self.new_observed_state_for_this_agent.agent_vel*10))  # [0,1,2,3,4,5] 
-
+        #Discretization
+        self.new_observed_state_INDEX_for_this_agent.agent_vel = self.discretize(self.new_observed_state_for_this_agent.agent_vel, self.agent_vel_state_grid)  # [0,1,2,3,4,5] 
         self.new_observed_state_INDEX_for_this_agent = self.new_observed_state_for_this_agent.agent_lane
-
-        #velocity #Multiplied by 10 to convert it to indices
-        self.new_observed_state_INDEX_for_this_agent.amb_vel = int(np.round(self.new_observed_state_for_this_agent.amb_vel*10))  # [0,1,2,3,4,5,6,7,8,9,10] 
-        
+        self.new_observed_state_INDEX_for_this_agent.amb_vel = self.discretize(self.new_observed_state_for_this_agent.amb_vel, self.amb_vel_state_grid)  # [0,1,2,3,4,5,6,7,8,9,10] 
         self.new_observed_state_INDEX_for_this_agent.amb_lane = self.new_observed_state_for_this_agent.amb_lane
-        
         self.new_observed_state_INDEX_for_this_agent.rel_amb_y = int(np.round(self.new_observed_state_for_this_agent.rel_amb_y) + abs(self.rel_amb_y_min))
 
     #picks an action by exploitation or exploration 
@@ -238,6 +209,7 @@ class SingleAgentQlearning:
         deactivateRL = False
         
         try:
+            rospy.wait_for_service('move_car/RL/RLPolicyActionService')
             sendAction = rospy.ServiceProxy('move_car/RL/RLPolicyActionService',RLPolicyActionService, persistent=True)
             resp = sendAction(action_request_header, action_request_control_action, action_request_acc, deactivateRL)
             action_feasibility = resp.RLActionresult
@@ -245,8 +217,10 @@ class SingleAgentQlearning:
             rospy.loginfo("resp is %i", self.resp_feasibility)
     
         except rospy.ServiceException, e:
-                rospy.wait_for_service('move_car/RL/RLPolicyActionService')
-                print "Service call failed: %s"%e
+            print "Service call failed: %s"%e
+            rospy.wait_for_service('move_car/RL/RLPolicyActionService')
+            rospy.loginfo("move_car/RL/RLPolicyActionService is re-established, however, action is not executed")
+                
         
         return action_feasibility, action_taken_time
 
