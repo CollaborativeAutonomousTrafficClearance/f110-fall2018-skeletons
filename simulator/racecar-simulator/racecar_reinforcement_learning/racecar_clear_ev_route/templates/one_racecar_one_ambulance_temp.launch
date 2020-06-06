@@ -16,6 +16,8 @@
     <arg name="z_pos1" default="0.05"/>
     <arg name="max_vel1" default="{{data.agent_max_vel}}"/>
     <arg name="max_acc1" default="{{data.agent_max_acc}}"/>
+    <arg name="goal_x1" default="{{data.agent_goal_x}}"/>
+    <arg name="goal_y1" default="{{data.agent_goal_y}}"/>
     <arg name="ctrl_method1" default=""/>
 
     <arg name="r_type2" default="ambulance"/>
@@ -27,8 +29,11 @@
     <arg name="ctrl_method2" default="_krauss_model"/>
 
     <arg name="comm_range" default="{{data.comm_range}}"/>
-    <arg name="use_comm_layer" default="true"/>
+    <arg name="use_comm_layer" default="false"/>
 
+
+    <param name="/$(arg r_name)1/goal_x" value="$(arg goal_x1)"/>
+    <param name="/$(arg r_name)1/goal_y" value="$(arg goal_y1)"/>
 
     <!--Launching Gazebo With The Racecar-->
     <include file="$(find racecar_gazebo)/launch/two_racecars.launch">
@@ -83,5 +88,9 @@
       <arg name="max_acc" value="$(arg max_acc1)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
+
+    <!--endTrackGoal Node-->
+    <node name="simpleGoal" pkg="racecar_navigation" type="simpleGoal.py" output="screen" ns="/$(arg r_name)1">
+    </node>
 
 </launch>

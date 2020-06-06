@@ -40,10 +40,6 @@
       <arg name="max_acc" value="$(arg max_acc)"/>
 
       <arg name="ctrl_method" value="$(arg ctrl_method)"/>
-
-      <arg name="endTrackGoal_x" value="$(arg endTrackGoal_x)"/>
-      <arg name="endTrackGoal_y" value="$(arg endTrackGoal_y)"/>  <!-- aw lane badal y-->
-
     </include>
 
 
@@ -80,9 +76,5 @@
     <!--Rviz Node-->
     <node name="$(anon rviz)" pkg="rviz" type="rviz"
           args="-d $(find racecar_rviz)/rviz/one_navigation.rviz" output="screen" ns="$(arg r_name)"/>
-
-    <!--endTrackGoal Node-->
-    <node name="simpleGoal" pkg="racecar_navigation" type="simpleGoal.py" output="screen" >
-  </node>
 
 </launch>

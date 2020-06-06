@@ -24,4 +24,4 @@ agent:
   agent_max_acc: 0.0167
 
 # Enable Gazebo Gui Param
-gazebo_gui: False
+gazebo_gui: True

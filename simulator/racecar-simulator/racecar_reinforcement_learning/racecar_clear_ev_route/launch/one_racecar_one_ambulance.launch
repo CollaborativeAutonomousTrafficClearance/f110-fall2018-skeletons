@@ -11,24 +11,29 @@
     <arg name="vis_laser" default="true"/>
 
     <arg name="r_type1" default="racecar"/>
-    <arg name="x_pos1" default="0"/>
-    <arg name="y_pos1" default="0.2625"/>
+    <arg name="x_pos1" default="-39"/>
+    <arg name="y_pos1" default="-0.7875"/>
     <arg name="z_pos1" default="0.05"/>
     <arg name="max_vel1" default="0.5"/>
     <arg name="max_acc1" default="0.0167"/>
+    <arg name="goal_x1" default="50"/>
+    <arg name="goal_y1" default="-0.7875"/>
     <arg name="ctrl_method1" default=""/>
 
     <arg name="r_type2" default="ambulance"/>
-    <arg name="x_pos2" default="0"/>
-    <arg name="y_pos2" default="-0.2625"/>
+    <arg name="x_pos2" default="-50"/>
+    <arg name="y_pos2" default="-0.7875"/>
     <arg name="z_pos2" default="0.05"/>
     <arg name="max_vel2" default="1"/>
     <arg name="max_acc2" default="0.0333"/>
     <arg name="ctrl_method2" default="_krauss_model"/>
 
-    <arg name="comm_range" default="10"/>
-    <arg name="use_comm_layer" default="true"/>
+    <arg name="comm_range" default="24"/>
+    <arg name="use_comm_layer" default="false"/>
 
+
+    <param name="/$(arg r_name)1/goal_x" value="$(arg goal_x1)"/>
+    <param name="/$(arg r_name)1/goal_y" value="$(arg goal_y1)"/>
 
     <!--Launching Gazebo With The Racecar-->
     <include file="$(find racecar_gazebo)/launch/two_racecars.launch">
@@ -83,5 +88,9 @@
       <arg name="max_acc" value="$(arg max_acc1)"/>
       <arg name="use_comm_layer" value="$(arg use_comm_layer)"/>
     </include>
+
+    <!--endTrackGoal Node-->
+    <node name="simpleGoal" pkg="racecar_navigation" type="simpleGoal.py" output="screen" ns="/$(arg r_name)1">
+    </node>
 
 </launch>

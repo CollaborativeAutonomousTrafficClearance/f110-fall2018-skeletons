@@ -2,6 +2,7 @@
 import rospy
 import numpy as np
 import random
+import os
 from std_msgs.msg import Header
 from racecar_clear_ev_route.srv import RLPolicyActionService, RLPolicyActionServiceRequest, RLPolicyActionServiceResponse
 from racecar_rl_environments.srv import states, statesRequest, statesResponse
@@ -16,27 +17,27 @@ class observed_state:
         self.amb_lane = -1
         self.rel_amb_y = -1
         
-class single_agent_qlearning:
+class SingleAgentQlearning:
     def __init__(self, environment_init, algo_params=dict(), load_q_table = False, test_mode_on = False):
+
+        rospy.loginfo("Initializing Single Agent Qlearning.")
+
         self.test_mode_on = test_mode_on
         #Constants for the environment
         self.environment_init = environment_init
+        
+        self.rel_amb_y_min = self.environment_init['rel_amb_y_min']
+        self.rel_amb_y_max = self.environment_init['rel_amb_y_max']
+        self.amb_vel_min = self.environment_init['amb_vel_min']
+        self.amb_vel_max = self.environment_init['amb_vel_max']
+        self.agent_vel_min = self.environment_init['agent_vel_min']
+        self.agent_vel_max = self.environment_init['agent_vel_max']
+        self.amb_acc = self.environment_init['amb_acc']
+        self.agent_acc = self.environment_init['agent_acc']
 
-        self.rel_amb_y_min = self.environment_init.rel_amb_y_min
-        self.rel_amb_y_max = self.environment_init.rel_amb_y_max
-        #The minimum velocity for the ambulance has to be 0 (Assumption in this code)
-        self.amb_vel_min = self.environment_init.amb_vel_min
-        self.amb_vel_max = self.environment_init.amb_vel_max
-        #The minimum velocity for the agent has to be 0 (Assumption in this code)
-        self.agent_vel_min = self.environment_init.agent_vel_min
-        self.agent_vel_max = self.environment_init.agent_vel_max
-        self.amb_acc = self.environment_init.amb_acc
-        self.agent_acc = self.environment_init.agent_acc
-        self.amb_lane_count = self.environment_init.amb_lane_count
-        self.agent_lane_count = self.environment_init.agent_lane_count
-
-        #Preprocessing environment's parameters
-
+        self.amb_lane_count = 3 #default
+        self.agent_lane_count = 3 #default
+        self.action_space = 5 #default
 
         #RL Actions
         self.Actions = ["change_left", "change_right", "acc", "no_acc", "dec"]
@@ -47,7 +48,7 @@ class single_agent_qlearning:
             "no_acc": 3,
             "dec": 4
         }  # Must maintain order in Actions
-        actions_indices = []   
+        self.actions_indices = []   
         for act in self.Actions:
             self.actions_indices.append(self.action_string_to_index_dict[act])
         
@@ -80,46 +81,39 @@ class single_agent_qlearning:
         self.RLdisengage = False  
 
         #establishing a connection with the Action Execution Server (Move Car Action Client)
-        rospy.wait_for_service('move_car/RL/RLPolicyActionService') 
+        ##rospy.wait_for_service('move_car/RL/RLPolicyActionService') #TODO: NEED TO MOVE IT SOMEWHERE ELSE BECAUSE InITIALLY IT IS NOT AVAILABLE
+
+        rospy.loginfo("Finished initializing Single Agent Qlearning.")
     
-    def create_uniform_grid(self, low, high, bins=(10, 10)):
-        """Define a uniformly-spaced grid that can be used to discretize a space.
-    
+    #Define a uniformly-spaced grid that can be used to discretize a space, works for a single dimension
+    def create_uniform_grid(self, low, high, bins, step):
+        """
         Parameters
         ----------
-        low : array_like
-            Lower bounds for each dimension of the continuous space.
-        high : array_like
-            Upper bounds for each dimension of the continuous space.
-        bins : tuple
-            Number of bins along each corresponding dimension.
+        low: Lower bound of the continuous space.
+        high: Upper bound of the continuous space.
+        bin: Number of split points
     
         Returns
         -------
-        grid : list of array_like
-            A list of arrays containing split points for each dimension.
+        grid:a list of arrays containing split points for each dimension.
         """
         grid = []
-        for i in range(len(bins)):
-            step = (high[i] - low[i]) / bins[i]
-            grid.append(np.linspace(low[i]+step, high[i] ,endpoint=False, num=bins[i]-1))
+        grid.append(np.linspace(low + step, high ,endpoint=False, num=bins-1))
     
         return grid
     
+    #Discretize a sample as per given grid, may work for higher dimensions
     def discretize(self,sample, grid):
-        """Discretize a sample as per given grid.
-    
+        """
         Parameters
         ----------
-        sample : array_like
-            A single sample from the (original) continuous space.
-        grid : list of array_like
-            A list of arrays containing split points for each dimension.
+        sample : A single sample from the (original) continuous space --> eg. velocity = 0.23
+        grid: An array containing split points for each dimension.
     
         Returns
         -------
-        discretized_sample : array_like
-            A sequence of integers with the same number of dimensions as sample.
+        discretized_sample: A sequence of integers with the same number of dimensions as sample.
         """
         dim = len(np.transpose(sample))
         discrete = np.zeros((dim,), dtype=int)
@@ -145,13 +139,21 @@ class single_agent_qlearning:
         Q_table size, is therefore = 6 * 3 * 11 *3 * 58 * 5 = 172260 ~ 170K .
         Note that some Q(s,a) pairs will be infeasible and hence will not be trained/updated.
         '''
-        #self.q_table = np.zeros((6, 3, 11, 3, 58, 5))
-        agent_vel_dimension = 0
-        agent_lane_dimension = 0
-        amb_vel_dimension = 0
-        amb_lane_dimension = 0
-        rel_amb_y_dimension = self.rel_amb_y_max + 1 + self.rel_amb_y_min
-        self.q_table = np.zeros((6, 3, 11, 3, rel_amb_y_dimension, 5))
+        agent_vel_bins = np.ceil(((self.agent_vel_max - self.agent_vel_min)/self.agent_acc)+1)
+        self.agent_vel_state_grid = self.create_uniform_grid(self.agent_vel_min, self.agent_vel_max, agent_vel_bins ,self.agent_acc)
+        
+        amb_vel_bins = np.ceil(((self.amb_vel_max - self.amb_vel_min)/self.amb_acc)+1)
+        self.amb_vel_state_grid = self.create_uniform_grid(self.amb_vel_min, self.amb_vel_max, amb_vel_bins, self.amb_acc)
+        
+        agent_vel_dimension = agent_vel_bins
+        agent_lane_dimension = self.agent_lane_count
+        amb_vel_dimension = amb_vel_bins
+        amb_lane_dimension = self.amb_lane_count
+        rel_amb_y_dimension = abs(self.rel_amb_y_max) + 1 + abs(self.rel_amb_y_min)
+        actions_dimension = self.action_space
+        
+        self.q_table = np.zeros((agent_vel_dimension, agent_lane_dimension, amb_vel_dimension, amb_lane_dimension, rel_amb_y_dimension, actions_dimension))
+        
         #Initialize all the Q table with -1000 as a flag for unvisited action
         self.q_table.fill(initial_value)
     
@@ -342,14 +344,14 @@ class single_agent_qlearning:
                 action_index] = q_of_s_a_value
 
     
-    def save_q_table(self, variables_folder_path = VARIABLES_FOLDER):
+    def save_q_table(self, variables_folder_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),"saved_variables")):
         if(self.test_mode_on):
             pass  # do not save
         else:
             np.save(variables_folder_path+'/Q_TABLE.npy', self.q_table)
 
 
-    def load_q_table(self, variables_folder_path = VARIABLES_FOLDER):
+    def load_q_table(self, variables_folder_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),"saved_variables")):
         #rospy.loginfo("Loaded Q_TABLE from {variables_folder_path + '/Q_TABLE.npy'}")
         return np.load(variables_folder_path+'/Q_TABLE.npy')
 
