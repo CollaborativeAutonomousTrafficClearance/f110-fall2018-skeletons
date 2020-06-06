@@ -21,16 +21,22 @@ class single_agent_qlearning:
         self.test_mode_on = test_mode_on
         #Constants for the environment
         self.environment_init = environment_init
-        
-        #window fixed parameters
+
         self.rel_amb_y_min = self.environment_init.rel_amb_y_min
         self.rel_amb_y_max = self.environment_init.rel_amb_y_max
+        #The minimum velocity for the ambulance has to be 0 (Assumption in this code)
         self.amb_vel_min = self.environment_init.amb_vel_min
         self.amb_vel_max = self.environment_init.amb_vel_max
+        #The minimum velocity for the agent has to be 0 (Assumption in this code)
         self.agent_vel_min = self.environment_init.agent_vel_min
         self.agent_vel_max = self.environment_init.agent_vel_max
         self.amb_acc = self.environment_init.amb_acc
         self.agent_acc = self.environment_init.agent_acc
+        self.amb_lane_count = self.environment_init.amb_lane_count
+        self.agent_lane_count = self.environment_init.agent_lane_count
+
+        #Preprocessing environment's parameters
+
 
         #RL Actions
         self.Actions = ["change_left", "change_right", "acc", "no_acc", "dec"]
@@ -51,10 +57,7 @@ class single_agent_qlearning:
         if(load_q_table or self.test_mode_on): # load_q_table if we are testing or we want to load it
             self.q_table = self.load_q_table()
         else:
-            #self.q_table = np.zeros((6, 3, 11, 3, 58, 5))
-            self.q_table = np.zeros((6, 3, 11, 3, (self.rel_amb_y_max + 1 + self.rel_amb_y_min), 5))
-            #Initialize all the Q table with -1000 as a flag for unvisited action
-            self.q_table.fill(-1000)
+            self.init_qtable(-1000)
             
             #Setting Algorithm parameters 
             self.exp_exp_tradeoff = algo_params['exp_exp_tradeoff']
@@ -66,14 +69,10 @@ class single_agent_qlearning:
             self.decay_rate = algo_params['decay_rate']
         
         #new and last observed states parameters 
-        #self.new_observed_state_for_this_agent = observed_state()
-        #self.last_observed_state_for_this_agent = observed_state()
         self.new_observed_state_for_this_agent = statesResponse()
         self.last_observed_state_for_this_agent = statesResponse()
 
         #new and last obesrved states INDICES parameters
-        #self.new_observed_state_INDEX_for_this_agent = observed_state()
-        #self.last_observed_state_INDEX_for_this_agent = observed_state()
         self.new_observed_state_INDEX_for_this_agent = statesResponse()
         self.last_observed_state_INDEX_for_this_agent = statesResponse()
         
@@ -82,6 +81,79 @@ class single_agent_qlearning:
 
         #establishing a connection with the Action Execution Server (Move Car Action Client)
         rospy.wait_for_service('move_car/RL/RLPolicyActionService') 
+    
+    def create_uniform_grid(self, low, high, bins=(10, 10)):
+        """Define a uniformly-spaced grid that can be used to discretize a space.
+    
+        Parameters
+        ----------
+        low : array_like
+            Lower bounds for each dimension of the continuous space.
+        high : array_like
+            Upper bounds for each dimension of the continuous space.
+        bins : tuple
+            Number of bins along each corresponding dimension.
+    
+        Returns
+        -------
+        grid : list of array_like
+            A list of arrays containing split points for each dimension.
+        """
+        grid = []
+        for i in range(len(bins)):
+            step = (high[i] - low[i]) / bins[i]
+            grid.append(np.linspace(low[i]+step, high[i] ,endpoint=False, num=bins[i]-1))
+    
+        return grid
+    
+    def discretize(self,sample, grid):
+        """Discretize a sample as per given grid.
+    
+        Parameters
+        ----------
+        sample : array_like
+            A single sample from the (original) continuous space.
+        grid : list of array_like
+            A list of arrays containing split points for each dimension.
+    
+        Returns
+        -------
+        discretized_sample : array_like
+            A sequence of integers with the same number of dimensions as sample.
+        """
+        dim = len(np.transpose(sample))
+        discrete = np.zeros((dim,), dtype=int)
+        for j in range(dim):
+            discrete[j] = int(np.digitize(sample[j], grid[j]))
+            
+        return discrete
+    
+    def init_qtable(self,initial_value):
+        '''
+        #Q_table. Multi-dimensional np.ndarray, each dimension: either state partial assignment or action (string action -> integer)
+        transformation is defined via action_to_string_dict
+        #Access order for the Q_table is [agent_vel][agent_lane][amb_vel][amb_lane][rel_amb_y][action]
+        #Values are kept as integers by rounding and casting as int. Values are clipped using np.clip() function
+        # agent_vel  (6): [0,1,2,3,4,5] #Clipped before applying velocity
+        # agent_lane (3): [0,1,2]
+        # amb_vel    (11): [0,1,2,3,4,5,6,7,8,9,10]
+        # amb_lane   (3): [0,1,2]
+        # rel_amb_y  (16+1+41 = 58): [-41,-40,-39,.....,0,...13,14,15,16]
+        #since window is designed to be:
+            #<--4 time steps *10 cells/step  = 40 steps  behind -- . agent . -- 3 steps * 5 cells/sec -->
+        # action     (5) : [Change left, Change right, acc +1, acc -1, acc 0]
+        Q_table size, is therefore = 6 * 3 * 11 *3 * 58 * 5 = 172260 ~ 170K .
+        Note that some Q(s,a) pairs will be infeasible and hence will not be trained/updated.
+        '''
+        #self.q_table = np.zeros((6, 3, 11, 3, 58, 5))
+        agent_vel_dimension = 0
+        agent_lane_dimension = 0
+        amb_vel_dimension = 0
+        amb_lane_dimension = 0
+        rel_amb_y_dimension = self.rel_amb_y_max + 1 + self.rel_amb_y_min
+        self.q_table = np.zeros((6, 3, 11, 3, rel_amb_y_dimension, 5))
+        #Initialize all the Q table with -1000 as a flag for unvisited action
+        self.q_table.fill(initial_value)
     
     #updates the new observed state parameters  
     def update_new_observed_state_for_this_agent(self, new_observed_state_for_this_agent):
@@ -281,22 +353,6 @@ class single_agent_qlearning:
         #rospy.loginfo("Loaded Q_TABLE from {variables_folder_path + '/Q_TABLE.npy'}")
         return np.load(variables_folder_path+'/Q_TABLE.npy')
 
-    '''
-        Q                #Q_table. Multi-dimensional np.ndarray, each dimension: either state partial assignment or action (string action -> integer)
-                          transformation is defined via action_to_string_dict
-                         #Access order for the Q_table is [agent_vel][agent_lane][amb_vel][amb_lane][rel_amb_y][action]
-                         #Values are kept as integers by rounding and casting as int. Values are clipped using np.clip() function
-                         # agent_vel  (6): [0,1,2,3,4,5] #Clipped before applying velocity
-                         # agent_lane (3): [0,1,2]
-                         # amb_vel    (11): [0,1,2,3,4,5,6,7,8,9,10]
-                         # amb_lane   (3): [0,1,2]
-                         # rel_amb_y  (16+1+41 = 58): [-41,-40,-39,.....,0,...13,14,15,16]
-                            #since window is designed to be:
-                            #<--4 time steps *10 cells/step  = 40 steps  behind -- . agent . -- 3 steps * 5 cells/sec -->
-                        # action     (5) : [Change left, Change right, acc +1, acc -1, acc 0]
-                        Q_table size, is therefore = 6 * 3 * 11 *3 * 58 * 5 = 172260 ~ 170K .
-                            Note that some Q(s,a) pairs will be infeasible and hence will not be trained/updated.
-        '''
           
 
 
