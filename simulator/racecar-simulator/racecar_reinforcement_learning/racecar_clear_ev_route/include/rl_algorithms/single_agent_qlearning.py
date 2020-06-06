@@ -48,7 +48,7 @@ class SingleAgentQlearning:
         if(load_q_table or self.test_mode_on): # load_q_table if we are testing or we want to load it
             self.q_table = self.load_q_table()
         else:
-            self.init_qtable(-1000)
+            self.init_q_table(-1000)
             
             #Setting Algorithm parameters 
             self.exp_exp_tradeoff = algo_params['exp_exp_tradeoff']
@@ -108,41 +108,6 @@ class SingleAgentQlearning:
             discrete[j] = int(np.digitize(sample[j], grid[j]))
             
         return discrete
-    
-    def init_qtable(self,initial_value):
-        '''
-        #Q_table. Multi-dimensional np.ndarray, each dimension: either state partial assignment or action (string action -> integer)
-        transformation is defined via action_to_string_dict
-        #Access order for the Q_table is [agent_vel][agent_lane][amb_vel][amb_lane][rel_amb_y][action]
-        #Values are kept as integers by rounding and casting as int. Values are clipped using np.clip() function
-        # agent_vel  (6): [0,1,2,3,4,5] #Clipped before applying velocity
-        # agent_lane (3): [0,1,2]
-        # amb_vel    (11): [0,1,2,3,4,5,6,7,8,9,10]
-        # amb_lane   (3): [0,1,2]
-        # rel_amb_y  (16+1+41 = 58): [-41,-40,-39,.....,0,...13,14,15,16]
-        #since window is designed to be:
-            #<--4 time steps *10 cells/step  = 40 steps  behind -- . agent . -- 3 steps * 5 cells/sec -->
-        # action     (5) : [Change left, Change right, acc +1, acc -1, acc 0]
-        Q_table size, is therefore = 6 * 3 * 11 *3 * 58 * 5 = 172260 ~ 170K .
-        Note that some Q(s,a) pairs will be infeasible and hence will not be trained/updated.
-        '''
-        agent_vel_bins = np.ceil(((self.agent_vel_max - self.agent_vel_min)/self.agent_acc)+1)
-        self.agent_vel_state_grid = self.create_uniform_grid(self.agent_vel_min, self.agent_vel_max, agent_vel_bins ,self.agent_acc)
-        
-        amb_vel_bins = np.ceil(((self.amb_vel_max - self.amb_vel_min)/self.amb_acc)+1)
-        self.amb_vel_state_grid = self.create_uniform_grid(self.amb_vel_min, self.amb_vel_max, amb_vel_bins, self.amb_acc)
-        
-        agent_vel_dimension = agent_vel_bins
-        agent_lane_dimension = self.agent_lane_count
-        amb_vel_dimension = amb_vel_bins
-        amb_lane_dimension = self.amb_lane_count
-        rel_amb_y_dimension = abs(self.rel_amb_y_max) + 1 + abs(self.rel_amb_y_min)
-        actions_dimension = self.action_space
-        
-        self.q_table = np.zeros((agent_vel_dimension, agent_lane_dimension, amb_vel_dimension, amb_lane_dimension, rel_amb_y_dimension, actions_dimension))
-        
-        #Initialize all the Q table with -1000 as a flag for unvisited action
-        self.q_table.fill(initial_value)
     
     #updates the new observed state parameters  
     def update_new_observed_state_for_this_agent(self, new_observed_state_for_this_agent):
@@ -258,6 +223,7 @@ class SingleAgentQlearning:
 
         return self.Action, action_taken_time
 
+    #sends a flag to move car action client to disengage RL and activate navigation
     def disengage(self):
         self.RLdisengage = True
         try:
@@ -268,6 +234,46 @@ class SingleAgentQlearning:
                 rospy.wait_for_service('move_car/RL/RLPolicyActionService')
                 print "Service call failed: %s"%e
     
+    def init_q_table(self,initial_value):
+        '''
+        #Q_table. Multi-dimensional np.ndarray, each dimension: either state partial assignment or action (string action -> integer)
+        transformation is defined via action_to_string_dict
+        #Access order for the Q_table is [agent_vel][agent_lane][amb_vel][amb_lane][rel_amb_y][action]
+        #Values are kept as integers by rounding and casting as int. Values are clipped using np.clip() function
+        # agent_vel  (6): [0,1,2,3,4,5] #Clipped before applying velocity
+        # agent_lane (3): [0,1,2]
+        # amb_vel    (11): [0,1,2,3,4,5,6,7,8,9,10]
+        # amb_lane   (3): [0,1,2]
+        # rel_amb_y  (16+1+41 = 58): [-41,-40,-39,.....,0,...13,14,15,16]
+        #since window is designed to be:
+            #<--4 time steps *10 cells/step  = 40 steps  behind -- . agent . -- 3 steps * 5 cells/sec -->
+        # action     (5) : [Change left, Change right, acc +1, acc -1, acc 0]
+        Q_table size, is therefore = 6 * 3 * 11 *3 * 58 * 5 = 172260 ~ 170K .
+        Note that some Q(s,a) pairs will be infeasible and hence will not be trained/updated.
+        '''
+        agent_vel_bins = np.ceil(((self.agent_vel_max - self.agent_vel_min)/self.agent_acc)+1)
+        self.agent_vel_state_grid = self.create_uniform_grid(self.agent_vel_min, self.agent_vel_max, agent_vel_bins ,self.agent_acc)
+        
+        amb_vel_bins = np.ceil(((self.amb_vel_max - self.amb_vel_min)/self.amb_acc)+1)
+        self.amb_vel_state_grid = self.create_uniform_grid(self.amb_vel_min, self.amb_vel_max, amb_vel_bins, self.amb_acc)
+        
+        agent_vel_dimension = agent_vel_bins
+        agent_lane_dimension = self.agent_lane_count
+        amb_vel_dimension = amb_vel_bins
+        amb_lane_dimension = self.amb_lane_count
+        rel_amb_y_dimension = abs(self.rel_amb_y_max) + 1 + abs(self.rel_amb_y_min)
+        actions_dimension = self.action_space
+        
+        self.q_table = np.zeros((agent_vel_dimension, agent_lane_dimension, amb_vel_dimension, amb_lane_dimension, rel_amb_y_dimension, actions_dimension))
+        
+        #Initialize all the Q table with -1000 as a flag for unvisited action
+        self.q_table.fill(initial_value)
+    
+    def display_q_table(self):
+        rospy.loginfo("\n\n\nQ table is\n")
+        rospy.loginfo(self.q_table)
+        rospy.loginfo("\n\n\n")
+        
     def update_q_table(self, chosen_action, reward, new_observed_state_for_this_agent):
         
         if(self.test_mode_on):  # do not update q_table if test_mode is on ! just use it.
