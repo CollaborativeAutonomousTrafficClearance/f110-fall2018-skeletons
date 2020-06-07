@@ -12,6 +12,7 @@ from racecar_rl_environments.msg import areWeDone
 from racecar_rl_environments.srv import states, statesRequest, statesResponse, reward, rewardRequest, rewardResponse, startSim, startSimRequest, startSimResponse, resetSim, resetSimRequest, resetSimResponse
 from racecar_communication.msg import ID, IDsCombined, IDStamped
 from nav_msgs.msg import Odometry
+import pdb
 
 # Locks to synchronize with main thread
 toMainThread_lock = threading.Lock()
@@ -192,7 +193,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         if rospy.has_param('gazebo_gui'):
             empty_world_args['gui'] = rospy.get_param('gazebo_gui')
         else:
-            empty_world_args['gui'] = False
+            empty_world_args['gui'] = True #TODO: was false
 
         with open(self.empty_world[0], "w") as fp:
             fp.writelines(empty_world_temp.render(data=empty_world_args))
@@ -214,11 +215,11 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
             if (self.isStartSimRequested == True):
                 self.startSim()
-                self.isStartSimRequested == False
+                self.isStartSimRequested = False
                 fromMainThread_lock.release()
             elif (self.isResetSimRequested == True):
                 self.resetSim()
-                self.isResetSimRequested == False
+                self.isResetSimRequested = False
                 fromMainThread_lock.release()
 
 
@@ -228,7 +229,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         # agent args
 
-        one_racecar_one_ambulance_args['agent_start_x'] = random.randint(-18, 12) #TODO: (LATER) let min and max position depend on EV's starting/ening position and vehicles' max vel/acc # current is -18.5 to 12 but rounded for simplicity
+        one_racecar_one_ambulance_args['agent_start_x'] = random.randint(-36, -36) #TODO: (LATER) let min and max position depend on EV's starting/ening position and vehicles' max vel/acc # current is -18.5 to 12 but rounded for simplicity
         one_racecar_one_ambulance_args['agent_start_y'] = self.genRandLanePos()
 
 
@@ -285,20 +286,23 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
         self.launch_one_racecar_one_ambulance.start()
-        rospy.sleep(5)
+        #rospy.sleep(5)
 
         ####
         ##self.launch_rviz = roslaunch.parent.ROSLaunchParent(self.uuid, self.rviz, force_screen=True, verbose=True)
         ##self.launch_rviz.start()
 
-        rospy.sleep(60)
+        rospy.sleep(30)  #was 60
 
         self.episode_start_time = rospy.Time.now()
 
     
-    def resetSim(self, req):
+    def resetSim(self):
 
+        rospy.loginfo("\ninside reset sim\n")
+        #pdb.set_trace()
         delete_model_client = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
+        #pdb.set_trace()
         rospy.wait_for_service('gazebo/delete_model')
 
         for agent_index in range((self.num_of_agents + self.num_of_EVs)):
@@ -322,7 +326,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
         self.launch_one_racecar_one_ambulance.start()
-        rospy.sleep(60)
+        rospy.sleep(30)  #TODO: was 60
 
         self.episode_start_time = rospy.Time.now()
 
@@ -385,7 +389,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         agent_x_pos = self.last_vehicle_ids.ids[req.robot_num - 1].x_position
         amb_x_pos = self.last_vehicle_ids.ids[self.EV_index].x_position
 
-        resp.rel_amb_y = int(np.round(amb_x_pos - agent_x_pos)) #TODO: (LATER) misleading name: change to rel_amb_x 
+        resp.rel_amb_y = amb_x_pos - agent_x_pos #TODO: (LATER) misleading name: change to rel_amb_x 
      
         return resp
 
@@ -483,11 +487,11 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         #1: steps == max_time_steps - 1
         time_step_number = rospy.Time.now() - self.episode_start_time
-        if(time_step_number == self.max_time_steps-1):
+        if(time_step_number.secs >= self.max_time_steps-1):
             self.is_episode_done = 1
             return
         #2: goal reached
-        elif(amb_abs_y > self.amb_goal_x - self.emer_max_speed - 1):
+        elif(amb_abs_y > self.amb_goal_x):
             # DONE: Change NET file to have total distance = 511. Then we can have the condition to compare with 500 directly.
             #return 2 #GOAL IS NOW 500-10-1 = 489 cells ahead. To avoid ambulance car eacaping
             self.is_episode_done = 2
@@ -496,7 +500,8 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
             if (agent_index != self.EV_index):
                 agent_abs_y = self.last_vehicle_ids.ids[agent_index].x_position #TODO: (LATER) misleading name: change to agent_abs_x
 
-                if (agent_abs_y > self.amb_goal_x - self.emer_max_speed - 1):
+                #if (agent_abs_y > self.amb_goal_x):
+                if (agent_abs_y > -35):
                     self.is_episode_done = 3
                     return
 
@@ -520,10 +525,15 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
                     self.is_activated = True
         return
 
+    def close_launch_files(self):
+        self.launch_empty_world.shutdown()
+        self.launch_one_racecar_one_ambulance.shutdown()
+        #self.launch_rviz.shutdown()
 
 if __name__ == '__main__':
     rospy.init_node("clear_ev_route_basic_env")
 
     cEVrbe = ClearEVRouteBasicEnv()
+    rospy.on_shutdown(cEVrbe.close_launch_files())
 
     rospy.spin()

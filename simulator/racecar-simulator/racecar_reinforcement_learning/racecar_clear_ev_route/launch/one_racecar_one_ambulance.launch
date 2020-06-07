@@ -11,7 +11,7 @@
     <arg name="vis_laser" default="true"/>
 
     <arg name="r_type1" default="racecar"/>
-    <arg name="x_pos1" default="-39"/>
+    <arg name="x_pos1" default="-36"/>
     <arg name="y_pos1" default="-0.7875"/>
     <arg name="z_pos1" default="0.05"/>
     <arg name="max_vel1" default="0.5"/>
@@ -22,10 +22,10 @@
 
     <arg name="r_type2" default="ambulance"/>
     <arg name="x_pos2" default="-50"/>
-    <arg name="y_pos2" default="-0.7875"/>
+    <arg name="y_pos2" default="0.2625"/>
     <arg name="z_pos2" default="0.05"/>
-    <arg name="max_vel2" default="1"/>
-    <arg name="max_acc2" default="0.0333"/>
+    <arg name="max_vel2" default="1.0"/>
+    <arg name="max_acc2" default="0.0333000011742"/>
     <arg name="ctrl_method2" default="_krauss_model"/>
 
     <arg name="comm_range" default="24"/>

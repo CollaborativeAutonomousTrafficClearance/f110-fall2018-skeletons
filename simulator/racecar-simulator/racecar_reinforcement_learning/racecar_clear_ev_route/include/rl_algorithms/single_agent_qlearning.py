@@ -8,11 +8,12 @@ from racecar_clear_ev_route.srv import RLPolicyActionService, RLPolicyActionServ
 from racecar_rl_environments.srv import states, statesRequest, statesResponse
         
 class SingleAgentQlearning:
-    def __init__(self, environment_init, algo_params=dict(), load_q_table = False, test_mode_on = False):
+    def __init__(self, environment_init=dict(), algo_params=dict(), load_q_table = False, test_mode_on = False):
 
         rospy.loginfo("Initializing Single Agent Qlearning.")
 
         self.test_mode_on = test_mode_on
+        
         #Constants for the environment
         self.environment_init = environment_init
         
@@ -40,7 +41,7 @@ class SingleAgentQlearning:
         }  # Must maintain order in Actions
         self.actions_indices = []   
         for act in self.Actions:
-            self.actions_indices.append(self.action_string_to_index_dict[act])
+            self.actions_indices.append(self.action_string_to_index_dict[act]) # 0 1 2 3 4
         
         self.action_chosing_method = None  # To be asssigned: Exploration or Exploitation based on exp_exp_tradeoff and epsilon
 
@@ -50,20 +51,20 @@ class SingleAgentQlearning:
         else:
             self.init_q_table(-1000)
             
-            #Setting Algorithm parameters 
-            self.exp_exp_tradeoff = algo_params['exp_exp_tradeoff']
-            self.epsilon = algo_params['epsilon']
-            self.gamma = algo_params['gamma']
-            self.learning_rate = algo_params['learning_rate']
-            self.max_epsilon = algo_params['max_epsilon']
-            self.min_epsilon = algo_params['min_epsilon']
-            self.decay_rate = algo_params['decay_rate']
+        #Setting Algorithm parameters 
+        self.exp_exp_tradeoff = algo_params['exp_exp_tradeoff'] #TODO: Ask why
+        self.epsilon = algo_params['epsilon']
+        self.gamma = algo_params['gamma']
+        self.learning_rate = algo_params['learning_rate']
+        self.max_epsilon = algo_params['max_epsilon']
+        self.min_epsilon = algo_params['min_epsilon']
+        self.decay_rate = algo_params['decay_rate']
         
         #new and last observed states parameters 
         self.new_observed_state_for_this_agent = statesResponse()
         self.last_observed_state_for_this_agent = statesResponse()
 
-        #new and last obesrved states INDICES parameters
+        #discretized new and last obesrved states (INDICES) parameters
         self.new_observed_state_INDEX_for_this_agent = statesResponse()
         self.last_observed_state_INDEX_for_this_agent = statesResponse()
         
@@ -79,7 +80,7 @@ class SingleAgentQlearning:
         ----------
         low: Lower bound of the continuous space.
         high: Upper bound of the continuous space.
-        bin: Number of split points
+        bin: Number of bins (segments)
     
         Returns
         -------
@@ -90,12 +91,12 @@ class SingleAgentQlearning:
     
         return grid
     
-    #Discretize a sample as per given grid, may work for higher dimensions
+    #Discretize a sample as per given grid, works for higher dimensions
     def discretize(self,sample, grid):
         """
         Parameters
         ----------
-        sample : A single sample from the (original) continuous space --> eg. velocity = 0.23
+        sample : It has to be an array, A single sample from the (original) continuous space --> eg. velocity = 0.23
         grid: An array containing split points for each dimension.
     
         Returns
@@ -118,9 +119,9 @@ class SingleAgentQlearning:
         self.new_observed_state_for_this_agent = new_observed_state_for_this_agent
 
         #Discretization
-        self.new_observed_state_INDEX_for_this_agent.agent_vel = self.discretize(self.new_observed_state_for_this_agent.agent_vel, self.agent_vel_state_grid)  # [0,1,2,3,4,5] 
+        self.new_observed_state_INDEX_for_this_agent.agent_vel = self.discretize(np.arrray([self.new_observed_state_for_this_agent.agent_vel]), self.agent_vel_state_grid)  # [0,1,2,3,4,5] 
         self.new_observed_state_INDEX_for_this_agent = self.new_observed_state_for_this_agent.agent_lane
-        self.new_observed_state_INDEX_for_this_agent.amb_vel = self.discretize(self.new_observed_state_for_this_agent.amb_vel, self.amb_vel_state_grid)  # [0,1,2,3,4,5,6,7,8,9,10] 
+        self.new_observed_state_INDEX_for_this_agent.amb_vel = self.discretize(np.array([self.new_observed_state_for_this_agent.amb_vel]), self.amb_vel_state_grid)  # [0,1,2,3,4,5,6,7,8,9,10] 
         self.new_observed_state_INDEX_for_this_agent.amb_lane = self.new_observed_state_for_this_agent.amb_lane
         self.new_observed_state_INDEX_for_this_agent.rel_amb_y = int(np.round(self.new_observed_state_for_this_agent.rel_amb_y) + abs(self.rel_amb_y_min))
 
@@ -129,22 +130,22 @@ class SingleAgentQlearning:
         
         if (self.action_chosing_method == 'expLOIT'):  # test_mode_on will force the algorithm to choose exploitation.
             
-            #max_value_index = np.argmax(self.q_table[self.new_agent_vel_index, self.new_agent_lane_index, self.new_amb_vel_index, self.new_amb_lane_index, self.new_rel_amb_y_index, feasible_actions_indices]) 
             max_value_index = np.argmax(self.q_table[self.new_observed_state_INDEX_for_this_agent.agent_vel, 
                     self.new_observed_state_INDEX_for_this_agent.agent_lane,
                     self.new_observed_state_INDEX_for_this_agent.amb_vel, 
                     self.new_observed_state_INDEX_for_this_agent.amb_lane, 
-                    self.new_rel_amb_y_index, feasible_actions_indices]) 
+                    self.new_observed_state_INDEX_for_this_agent.rel_amb_y, feasible_actions_indices]) 
             
-            desired_action_string = self.actions_indices[max_value_index]
+            desired_action_index = feasible_actions_indices[max_value_index]
+            desired_action_string = self.Actions[desired_action_index]
             self.Action = desired_action_string
         
         elif(self.action_chosing_method == 'expLORE'):
             
-            action_index = random.choice(self.actions_indices)
+            action_index = random.choice(feasible_actions_indices)
 
-            desired_action_string = self.actions_indices[action_index]
-            #debug# print("I am the picked action for exploration ", desired_action_string)
+            desired_action_index = feasible_actions_indices[action_index]
+            desired_action_string = self.Actions[desired_action_index]
             self.Action = desired_action_string
     
     #action execution, return its feasibility and taken time if feasible
@@ -179,7 +180,7 @@ class SingleAgentQlearning:
             resp = sendAction(action_request_header, action_request_control_action, action_request_acc, deactivateRL)
             action_feasibility = resp.RLActionresult
             action_taken_time = resp.RLActionTime
-            rospy.loginfo("resp is %i", self.resp_feasibility)
+            rospy.loginfo("response is %d", self.resp_feasibility)
     
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
@@ -197,7 +198,7 @@ class SingleAgentQlearning:
         #update the new observed state for the action
         self.update_new_observed_state_for_this_agent(new_observed_state_for_this_agent)
         #exploration or exploitation choice 
-        self.exp_exp_tradeoff = random.uniform(0,1)
+        self.exp_exp_tradeoff = random.uniform(0,1) #TODO
         
         if (self.exp_exp_tradeoff > self.epsilon or self.test_mode_on):
             self.action_chosing_method = 'expLOIT'
@@ -221,14 +222,17 @@ class SingleAgentQlearning:
                 found_feasible_action = False
                 feasible_actions_indices.remove(self.action_string_to_index_dict[self.Action])
 
-        return self.Action, action_taken_time
+        return self.Action, action_taken_time  #TODO: return a flag to indicate that there is no feasible action, if happens
 
     #sends a flag to move car action client to disengage RL and activate navigation
     def disengage(self):
         self.RLdisengage = True
+        action_request_header = rospy.Time.now()
+
         try:
+            rospy.wait_for_service('move_car/RL/RLPolicyActionService')
             sendAction = rospy.ServiceProxy('move_car/RL/RLPolicyActionService',RLPolicyActionService, persistent=True)
-            resp = sendAction(self.action_request_header, self.action_request_control_action, self.action_request_acc, self.RLdisengage)
+            resp = sendAction(action_request_header, -1, -1, self.RLdisengage)
     
         except rospy.ServiceException, e:
                 rospy.wait_for_service('move_car/RL/RLPolicyActionService')
@@ -238,23 +242,27 @@ class SingleAgentQlearning:
         '''
         #Q_table. Multi-dimensional np.ndarray, each dimension: either state partial assignment or action (string action -> integer)
         transformation is defined via action_to_string_dict
+        
         #Access order for the Q_table is [agent_vel][agent_lane][amb_vel][amb_lane][rel_amb_y][action]
+        
         #Values are kept as integers by rounding and casting as int. Values are clipped using np.clip() function
-        # agent_vel  (6): [0,1,2,3,4,5] #Clipped before applying velocity
-        # agent_lane (3): [0,1,2]
-        # amb_vel    (11): [0,1,2,3,4,5,6,7,8,9,10]
-        # amb_lane   (3): [0,1,2]
-        # rel_amb_y  (16+1+41 = 58): [-41,-40,-39,.....,0,...13,14,15,16]
+        # agent_vel  e.g. (6): [0,1,2,3,4,5] #Clipped before applying velocity
+        # agent_lane e.g. (3): [0,1,2]
+        # amb_vel    e.g. (11): [0,1,2,3,4,5,6,7,8,9,10]
+        # amb_lane   e.g. (3):  [0,1,2]
+        # rel_amb_y  e.g. (16+1+41 = 58) [-41,-40,-39,.....,0,...13,14,15,16]
         #since window is designed to be:
             #<--4 time steps *10 cells/step  = 40 steps  behind -- . agent . -- 3 steps * 5 cells/sec -->
-        # action     (5) : [Change left, Change right, acc +1, acc -1, acc 0]
+        # action     e.g. (5) : [Change left, Change right, acc +, acc -, acc 0]
         Q_table size, is therefore = 6 * 3 * 11 *3 * 58 * 5 = 172260 ~ 170K .
         Note that some Q(s,a) pairs will be infeasible and hence will not be trained/updated.
         '''
-        agent_vel_bins = np.ceil(((self.agent_vel_max - self.agent_vel_min)/self.agent_acc)+1)
+        #Number of segments (bins) for agent velocity discretization
+        agent_vel_bins = int(np.ceil(((self.agent_vel_max - self.agent_vel_min)/self.agent_acc)))
         self.agent_vel_state_grid = self.create_uniform_grid(self.agent_vel_min, self.agent_vel_max, agent_vel_bins ,self.agent_acc)
         
-        amb_vel_bins = np.ceil(((self.amb_vel_max - self.amb_vel_min)/self.amb_acc)+1)
+        #Number of segments (bins) for ambulance velocity discretization
+        amb_vel_bins = int(np.ceil(((self.amb_vel_max - self.amb_vel_min)/self.amb_acc)))
         self.amb_vel_state_grid = self.create_uniform_grid(self.amb_vel_min, self.amb_vel_max, amb_vel_bins, self.amb_acc)
         
         agent_vel_dimension = agent_vel_bins
@@ -274,7 +282,7 @@ class SingleAgentQlearning:
         rospy.loginfo(self.q_table)
         rospy.loginfo("\n\n\n")
         
-    def update_q_table(self, chosen_action, reward, new_observed_state_for_this_agent):
+    def update_q_table(self, reward, new_observed_state_for_this_agent):
         
         if(self.test_mode_on):  # do not update q_table if test_mode is on ! just use it.
             pass
@@ -286,7 +294,7 @@ class SingleAgentQlearning:
             s': new state we are in because of action a (previous action)
             a': new action we are expected to choose if we exploit on s' (new state)
             '''
-            action_index = self.action_string_to_index_dict[chosen_action]
+            action_index = self.action_string_to_index_dict[self.Action]
             self.update_new_observed_state_for_this_agent(new_observed_state_for_this_agent)
 
             # OLD STATE VARIABLES:
@@ -314,7 +322,9 @@ class SingleAgentQlearning:
             # max Q(s',a')
             max_q_of_s_value_new = np.max(self.q_table[
                                               new_agent_vel_index, new_agent_lane_index, new_amb_vel_index, new_amb_lane_index, new_rel_amb_y_index])
-
+            if (max_q_of_s_value_new == -1000):
+                max_q_of_s_value_new = 0
+            
             # Actual Update:
             q_of_s_a_value = q_of_s_a_value + self.learning_rate * (reward + self.gamma * max_q_of_s_value_new - q_of_s_a_value)
 
