@@ -74,12 +74,14 @@ class SAQLMaster:
     def isActivatedOrDoneCallback(self, inputMsg):
         if (self.test_mode_on == True):
             if ((self.is_activated == False) and (inputMsg.is_activated == True)):
-                test_activity_lock.release()
+                if (test_activity_lock.locked() == True):
+                    test_activity_lock.release()
             self.is_activated = inputMsg.is_activated
         else:
             if (self.is_activated == False):
                 if ((inputMsg.is_activated == True) or (inputMsg.is_episode_done != 0)):
-                    train_activity_lock.release()
+                    if (train_activity_lock.locked() == True):
+                        train_activity_lock.release()
             self.is_activated = inputMsg.is_activated
             self.is_episode_done = inputMsg.is_episode_done
 
@@ -208,6 +210,8 @@ class SAQLMaster:
                         episode_end_reason = "ambulance goal"
                     elif (self.is_episode_done == 3):
                         episode_end_reason = "agent goal"
+                    elif (self.is_episode_done == 4):
+                        episode_end_reason = "simulation died"
                     else:
                         episode_end_reason = "unknown"
 
@@ -257,6 +261,8 @@ class SAQLMaster:
                         episode_end_reason = "ambulance goal"
                     elif (self.is_episode_done == 3):
                         episode_end_reason = "agent goal"
+                    elif (self.is_episode_done == 4):
+                        episode_end_reason = "simulation died"
                     else:
                         episode_end_reason = "unknown"
 
