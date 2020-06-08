@@ -6,6 +6,8 @@ import random
 import roslaunch
 import jinja2
 import threading
+import subprocess
+import multiprocessing
 from std_msgs.msg import Bool
 from gazebo_msgs.srv import DeleteModel
 from racecar_rl_environments.msg import areWeDone
@@ -49,8 +51,11 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         self.is_episode_done = 0 # int: 0: episode not finished, 1: episode finished because reached max simulation time, 2: episode finished because ambulance reached goal, 3: episode finished because agent reached goal
         self.is_activated = False # bool: if RL model should be activated
        
-        self.isStartSimRequested = False
-        self.isResetSimRequested = False
+        self.is_start_sim_requested = False
+        self.is_reset_sim_requested = False
+
+        self.is_gazebo_alive = False
+        self.ping_gazebo_thread = threading.Thread(target=self.pingGazebo)
 
         self.episode_start_time = -1 # time at which episode starts
         self.optimal_time = 10000 # initialization of optimal episode time -- overwritten later
@@ -64,6 +69,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         rospy.loginfo("Finished initializing Clear EV Route Basic Environment.")
 
+        self.ping_gazebo_thread.start()
         self.waitForLaunchNodesRequests()
 
     # Initializes IDsCombined message 
@@ -88,6 +94,12 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
             self.r_name = rospy.get_param('r_name')
         else:
             self.r_name = "racecar"
+
+        ## Use gazebo gui ## 
+        if rospy.has_param('gazebo_gui'):
+            self.use_gazebo_gui = rospy.get_param('gazebo_gui')
+        else:
+            self.use_gazebo_gui = False
 
         ## Reward parameters ##
         if rospy.has_param('reward/max_final_reward'):
@@ -189,10 +201,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         self.empty_world = roslaunch.rlutil.resolve_launch_arguments(self.empty_world)
         empty_world_args = dict()
 
-        if rospy.has_param('gazebo_gui'):
-            empty_world_args['gui'] = rospy.get_param('gazebo_gui')
-        else:
-            empty_world_args['gui'] = False
+        empty_world_args['gui'] = self.use_gazebo_gui
 
         with open(self.empty_world[0], "w") as fp:
             fp.writelines(empty_world_temp.render(data=empty_world_args))
@@ -207,18 +216,61 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         self.one_racecar_one_ambulance = ['racecar_clear_ev_route', 'one_racecar_one_ambulance.launch']
         self.one_racecar_one_ambulance = roslaunch.rlutil.resolve_launch_arguments(self.one_racecar_one_ambulance)
 
+
+    def pingGazebo(self):
+
+        while(1):
+            ping_gazebo_server = subprocess.Popen(["rosnode", "ping", "-c", "1", "/gazebo"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            gzs_output, gzs_error = ping_gazebo_server.communicate()
+
+            ping_gazebo_client = subprocess.Popen(["rosnode", "ping", "-c", "1", "/gazebo_gui"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            gzc_output, gzc_error = ping_gazebo_client.communicate()
+
+            if (self.use_gazebo_gui == False):
+                if (gzs_error != ""):
+                    self.is_gazebo_alive = False
+                else:
+                    self.is_gazebo_alive = True
+            else:
+                if ((gzs_error != "") or (gzc_error != "")): #TODO: edit if do not want to quit upon death of gazebo gui
+                    self.is_gazebo_alive = False
+                else:
+                    self.is_gazebo_alive = True
+
+            rospy.sleep(1) #TODO: change rate as desired
+
+
+    def deleteModel(self, vehicle_index):
+
+        delete_model_client = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
+        rospy.wait_for_service('gazebo/delete_model')
+
+        delete_model_client(self.r_name + str(vehicle_index + 1))
+
+
+    def relaunchGazeboIfDead(self):
+
+        while (self.is_gazebo_alive == False):
+            self.launch_empty_world.shutdown()
+            os.system("killall -9 gazebo & killall -9 gzserver & killall -9 gzclient")
+
+            self.launch_empty_world = roslaunch.parent.ROSLaunchParent(self.uuid, self.empty_world, force_screen=True, verbose=True)
+            self.launch_empty_world.start()
+            rospy.sleep(20)
+        
+
     def waitForLaunchNodesRequests(self):
 
         while (1):
             toMainThread_lock.acquire()
 
-            if (self.isStartSimRequested == True):
+            if (self.is_start_sim_requested == True):
                 self.startSim()
-                self.isStartSimRequested == False
+                self.is_start_sim_requested == False
                 fromMainThread_lock.release()
-            elif (self.isResetSimRequested == True):
+            elif (self.is_reset_sim_requested == True):
                 self.resetSim()
-                self.isResetSimRequested == False
+                self.is_reset_sim_requested == False
                 fromMainThread_lock.release()
 
 
@@ -275,7 +327,10 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         self.launch_empty_world.start()
         rospy.sleep(20)
 
+        self.relaunchGazeboIfDead()
+
         ####
+
         one_racecar_one_ambulance_args = self.genTemplateArgs()
 
         with open(self.one_racecar_one_ambulance[0], "w") as fp:
@@ -285,34 +340,53 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
         self.launch_one_racecar_one_ambulance.start()
-        rospy.sleep(5)
+        #rospy.sleep(5)
 
         ####
         ##self.launch_rviz = roslaunch.parent.ROSLaunchParent(self.uuid, self.rviz, force_screen=True, verbose=True)
         ##self.launch_rviz.start()
 
-        rospy.sleep(60)
+        rospy.sleep(30)
 
         self.episode_start_time = rospy.Time.now()
 
     
     def resetSim(self, req):
 
-        delete_model_client = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
-        rospy.wait_for_service('gazebo/delete_model')
+        if (self.is_gazebo_alive == False):
+            self.launch_one_racecar_one_ambulance.shutdown()
+            rospy.sleep(60)
 
-        for agent_index in range((self.num_of_agents + self.num_of_EVs)):
-            delete_model_client(self.r_name + str(agent_index + 1))
-        rospy.sleep(20)
+            self.relaunchGazeboIfDead()
 
-        self.launch_one_racecar_one_ambulance.shutdown()
-        rospy.sleep(60)
+        else:
+            
+            is_gazebo_relaunch_needed = False
+
+            for vehicle_index in range((self.num_of_agents + self.num_of_EVs)):
+                del_model_process = multiprocessing.Process(target=self.deleteModel, args=(vehicle_index,))
+                del_model_process.start()
+                del_model_process.join(5.0) #TODO: might consider increasing timeout
+         
+                if (del_model_process.is_alive() == True):
+                    del_model_process.terminate()
+                    is_gazebo_relaunch_needed = True
+                    break
+
+            self.launch_one_racecar_one_ambulance.shutdown()
+            rospy.sleep(60)
+
+            if (is_gazebo_relaunch_needed == True):
+                self.relaunchGazeboIfDead()
+
+        ###
 
         self.last_vehicle_ids = self.initIdsCombinedMsg()
         self.is_episode_done = 0
         self.is_activated = False
 
         ####
+
         one_racecar_one_ambulance_args = self.genTemplateArgs()
 
         with open(self.one_racecar_one_ambulance[0], "w") as fp:
@@ -322,7 +396,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
         self.launch_one_racecar_one_ambulance.start()
-        rospy.sleep(60)
+        rospy.sleep(30)
 
         self.episode_start_time = rospy.Time.now()
 
@@ -346,7 +420,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         self.is_episode_done = 0
         self.is_activated = False
 
-        self.isStartSimRequested = True
+        self.is_start_sim_requested = True
         toMainThread_lock.release()
         fromMainThread_lock.acquire()
 
@@ -359,7 +433,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         if (req.reset_env == True):
 
-            self.isResetSimRequested = True
+            self.is_reset_sim_requested = True
             toMainThread_lock.release()
             fromMainThread_lock.acquire()
 
@@ -375,10 +449,10 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         resp = statesResponse()
 
-        resp.agent_vel = self.last_vehicle_ids.ids[req.robot_num - 1].velocity
+        resp.agent_vel = min(self.last_vehicle_ids.ids[req.robot_num - 1].velocity, 0)
         resp.agent_lane = self.last_vehicle_ids.ids[req.robot_num - 1].lane_num
 
-        resp.amb_vel = self.last_vehicle_ids.ids[self.EV_index].velocity
+        resp.amb_vel = min(self.last_vehicle_ids.ids[self.EV_index].velocity, 0)
         resp.amb_lane = self.last_vehicle_ids.ids[self.EV_index].lane_num
 
 
@@ -487,7 +561,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
             self.is_episode_done = 1
             return
         #2: goal reached
-        elif(amb_abs_y > self.amb_goal_x - self.emer_max_speed - 1):
+        if(amb_abs_y > self.amb_goal_x - self.emer_max_speed - 1):
             # DONE: Change NET file to have total distance = 511. Then we can have the condition to compare with 500 directly.
             #return 2 #GOAL IS NOW 500-10-1 = 489 cells ahead. To avoid ambulance car eacaping
             self.is_episode_done = 2
@@ -499,6 +573,9 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
                 if (agent_abs_y > self.amb_goal_x - self.emer_max_speed - 1):
                     self.is_episode_done = 3
                     return
+        if(self.is_gazebo_alive == False):
+            self.is_episode_done = 4
+            return
 
         # 0: not done
         self.is_episode_done = 0
