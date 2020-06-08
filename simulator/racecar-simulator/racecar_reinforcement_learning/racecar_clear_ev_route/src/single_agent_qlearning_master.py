@@ -22,7 +22,7 @@ class SAQLMaster:
     def __init__(self):
         
         rospy.loginfo("Initializing Single Agent Q-Learning Master.")
-        self.is_activated = True
+        self.is_activated = True  #TODO: Default is false
         self.is_episode_done = 0
         self.episode_num = 0
 
@@ -95,7 +95,7 @@ class SAQLMaster:
             return
 
         if (self.test_mode_on == True):
-            self.test_model();
+            self.test_model()
 
         else:
             self.is_episode_done = 0
@@ -109,10 +109,11 @@ class SAQLMaster:
             while(self.episode_num < self.max_num_episodes):
 
                 rospy.loginfo("Resetting simulation.")
-                ##resp = self.ENV_COMM.resetSim()
-                ##if (resp.is_successful == False):
-                ##    raise Exception("Could not reset simulation. Terminating.")
-                ##    return
+                resp = self.ENV_COMM.resetSim()
+    
+                if (resp.is_successful == False):
+                    raise Exception("Could not reset simulation. Terminating.")
+                    return
 
                 self.episode_num += 1
                 self.is_episode_done = 0
@@ -159,13 +160,16 @@ class SAQLMaster:
 
             # 4: Print step info
             if (step % self.every_n_steps == 0):
-                rospy.loginfo("LastState: ")
-                rospy.loginfo(agent_state_before) #TODO TODO: ####################
+                rospy.loginfo("\n\nLastState: ")
+                rospy.loginfo("\nAgent velocity is %f, \nAgent Lane %d, \nAmbulance Vel %f, \nAmbulance Lane %d, \nRelative Position %f\n", agent_state_before.agent_vel,agent_state_before.agent_lane, agent_state_before.amb_vel, agent_state_before.amb_lane, agent_state_before.rel_amb_y)
+                #rospy.loginfo(agent_state_before) #TODO TODO: ####################
 
                 rospy.loginfo("LastAction: %s", executed_action)
 
-                rospy.loginfo("NewState: ")
-                rospy.loginfo(agent_state_after) #TODO TODO: ####################
+                rospy.loginfo("\n\nNewState: ")
+                rospy.loginfo("\nAgent velocity is %f, \nAgent Lane %d, \nAmbulance Vel %f, \nAmbulance Lane %d, \nRelative Position %f\n", agent_state_after.agent_vel,agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
+                #rospy.loginfo(agent_state_after) #TODO TODO: ####################
+            
 
         return
 
@@ -183,14 +187,17 @@ class SAQLMaster:
         ########################
         # measure initial state
         rospy.loginfo("Getting agent's state before taking action.")
-        ##agent_state = self.ENV_COMM.getState(self.robot_num)
+        agent_state = self.ENV_COMM.getState(self.robot_num)
 
         ########################
         # 2: MAIN LOOP
 
         if (self.episode_num % self.every_n_episodes == 0):
-            rospy.loginfo("Episode: %d. Epsilon: %f. State:", self.episode_num, self.RL_ALGO.epsilon)
-            ##rospy.loginfo(agent_state) #TODO TODO: ####################
+            rospy.loginfo("Episode: %d. Epsilon: %f.", self.episode_num, self.RL_ALGO.epsilon)
+            #rospy.loginfo(agent_state) #TODO TODO: ####################
+        rospy.loginfo("\n\nState at episode start: ")
+        rospy.loginfo("\nAgent velocity is %f, \nAgent Lane %d, \nAmbulance Vel %f, \nAmbulance Lane %d, \nRelative Position %f\n", agent_state.agent_vel,agent_state.agent_lane, agent_state.amb_vel, agent_state.amb_lane, agent_state.rel_amb_y)
+            
 
         while (1):
 
@@ -216,14 +223,16 @@ class SAQLMaster:
                         episode_end_reason = "unknown"
 
                     rospy.loginfo("Episode: %d ended for the reason: %s", self.episode_num, episode_end_reason)
-                    rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
+                    #rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
                     ##rospy.loginfo(agent_state_after) #TODO TODO: ####################
+                    #rospy.loginfo("\n\nNewState: ")
+                    #rospy.loginfo("\nAgent velocity is %f, \nAgent Lane %d, \nAmbulance Vel %f, \nAmbulance Lane %d, \nRelative Position %f\n", agent_state_after.agent_vel,agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
                 break
             ########################                
 
             # 3.1: Store state before taking action
             rospy.loginfo("Getting agent's state before taking action.")
-            ##agent_state_before = self.ENV_COMM.getState(self.robot_num)
+            agent_state_before = self.ENV_COMM.getState(self.robot_num)
 
             # ----------------------------------------------------------------- #
             # 3.2:   M O V E      O N E      S I M U L A T I O N       S T E P  #
@@ -232,12 +241,14 @@ class SAQLMaster:
             # ----------------------------------------------------------------- #
 
             rospy.loginfo("Taking action.")
-            ##executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)
+            ##executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)  #TODO: raise error if no action is feasible
             step += 1
 
             # 3.3: measurements and if we are done check
             rospy.loginfo("Getting agent's state after taking action.")
-            ##agent_state_after = self.ENV_COMM.getState(self.robot_num)
+            agent_state_after = self.ENV_COMM.getState(self.robot_num)
+            rospy.loginfo("\n\nNewState: ")
+            rospy.loginfo("\nAgent velocity is %f, \nAgent Lane %d, \nAmbulance Vel %f, \nAmbulance Lane %d, \nRelative Position %f\n", agent_state_after.agent_vel,agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
 
             # 3.4: reward last step's chosen action
             rospy.loginfo("Calculating reward.")
@@ -247,12 +258,13 @@ class SAQLMaster:
 
             # 3.5: update q table using backward reward logic
             rospy.loginfo("Updating qtable.")
-            ##self.RL_ALGO.update_q_table(executed_action, reward, agent_state_after)
+            ##self.RL_ALGO.update_q_table(reward, agent_state_after)
 
             ##if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
                 ##rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
                 ##rospy.loginfo(agent_state_after) #TODO TODO: ####################
 
+            #TODO check if has to be repeated 
             if (self.is_episode_done): # DO NOT REMOVE THIS (IT BREAKS IF WE ARE DONE)
                 if(self.episode_num % self.every_n_episodes == 0):
                     if (self.is_episode_done == 1):
@@ -267,7 +279,7 @@ class SAQLMaster:
                         episode_end_reason = "unknown"
 
                     rospy.loginfo("Episode: %d ended for the reason: %s", self.episode_num, episode_end_reason)
-                    rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
+                    #rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
                     ##rospy.loginfo(agent_state_after) #TODO TODO: ####################
                 break
 

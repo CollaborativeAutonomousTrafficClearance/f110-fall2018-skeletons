@@ -3,7 +3,7 @@ import rospy
 import tf.transformations
 from nav_msgs.msg import Path, Odometry
 from geometry_msgs.msg import PoseStamped
-from racecar_navigation.msg import Lanes_Info, BoolWithHeader, NavAction
+from racecar_navigation.msg import Lanes_Info, NavAction, BoolStamped
 from racecar_navigation.srv import CustomLocalPlannerFeedback, CustomLocalPlannerFeedbackRequest, CustomLocalPlannerFeedbackResponse
 import message_filters
 

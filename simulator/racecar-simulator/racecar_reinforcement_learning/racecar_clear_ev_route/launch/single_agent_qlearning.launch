@@ -14,7 +14,7 @@
     <node name="single_agent_qlearning_master" pkg="racecar_clear_ev_route" type="single_agent_qlearning_master.py" output="screen" ns="/$(arg r_name)">
     </node>
 
-    <node name="clear_ev_route_basic_env" pkg="racecar_rl_environments" type="racecar_clear_ev_route_basic_env.py" output="screen">
-    </node>
+    <!--<node name="clear_ev_route_basic_env" pkg="racecar_rl_environments" type="racecar_clear_ev_route_basic_env.py" output="screen">
+    </node>-->
 
 </launch>
