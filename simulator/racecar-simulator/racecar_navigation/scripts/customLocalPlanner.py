@@ -17,7 +17,7 @@ class CustomLocalPlanner:
         self.newGoal = False
 
     def chosenAction(self,future_LaneInfo, current_LaneInfo):
-        rospy.loginfo("\is one change executed? : %i\n", self.oneLaneChangeExecuted)
+        #rospy.loginfo("\is one change executed? : %i\n", self.oneLaneChangeExecuted) #TODO
         #only send a new goal if lane change is not being executed 
         if self.oneLaneChangeExecuted == False:
             if ((future_LaneInfo.map_array[1]  > current_LaneInfo.map_array[1])):
