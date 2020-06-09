@@ -371,11 +371,38 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
     def resetSim(self):
 
         if (self.is_gazebo_alive == False):
+            ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            env_output, env_error = ping_env.communicate()
+            if (env_error != ""):
+                rospy.loginfo("\n\n\n\nNODE Ended\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended\n\n\n\n")
+                rospy.sleep(5)
+            
             self.launch_one_racecar_one_ambulance.shutdown()
+            ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            env_output, env_error = ping_env.communicate()
+            if (env_error != ""):
+                rospy.loginfo("\n\n\n\nNODE Ended222222222\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended222222222\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended222222222\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended222222222\n\n\n\n")
+                rospy.sleep(5)
             rospy.sleep(60)
         
             force_shutdown = True
             self.relaunchGazeboIfDead(force_shutdown)
+            ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            env_output, env_error = ping_env.communicate()
+            if (env_error != ""):
+                rospy.loginfo("\n\n\n\nNODE Ended33333333333\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended33333333333\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended33333333333\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended33333333333\n\n\n\n")
+                rospy.sleep(5)
+            rospy.sleep(60)
+            
             ######case######
         
         else:
@@ -385,22 +412,80 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
             for vehicle_index in range((self.num_of_agents + self.num_of_EVs)):
                 del_model_process = multiprocessing.Process(target=self.deleteModel, args=(vehicle_index,))
                 del_model_process.start()
+                ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                env_output, env_error = ping_env.communicate()
+                if (env_error != ""):
+                    rospy.loginfo("\n\n\n\nNODE Ended555555555\n\n\n\n")
+                    rospy.loginfo("\n\n\n\nNODE Ended555555555\n\n\n\n")
+                    rospy.loginfo("\n\n\n\nNODE Ended555555555\n\n\n\n")
+                    rospy.loginfo("\n\n\n\nNODE Ended555555555\n\n\n\n")
                 del_model_process.join(7.0) #TODO: might consider increasing timeout
-         
+                ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                env_output, env_error = ping_env.communicate()
+                if (env_error != ""):
+                    rospy.loginfo("\n\n\n\nNODE Ended6666666\n\n\n\n")
+                    rospy.loginfo("\n\n\n\nNODE Ended6666666\n\n\n\n")
+                    rospy.loginfo("\n\n\n\nNODE Ended6666666\n\n\n\n")
+                    rospy.loginfo("\n\n\n\nNODE Ended6666666\n\n\n\n")
                 if (del_model_process.is_alive() == True):
                     rospy.loginfo("\n\nbefore terminate\n\n")
+                    ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    env_output, env_error = ping_env.communicate()
+                    if (env_error != ""):
+                        rospy.loginfo("\n\n\n\nNODE Ended777777\n\n\n\n")
+                        rospy.loginfo("\n\n\n\nNODE Ended777777\n\n\n\n")
+                        rospy.loginfo("\n\n\n\nNODE Ended777777\n\n\n\n")
+                        rospy.loginfo("\n\n\n\nNODE Ended777777\n\n\n\n")
                     del_model_process.terminate()
                     rospy.loginfo("\n\after terminate\n\n")
+                    ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    env_output, env_error = ping_env.communicate()
+                    if (env_error != ""):
+                        rospy.loginfo("\n\n\n\nNODE Ended88888\n\n\n\n")
+                        rospy.loginfo("\n\n\n\nNODE Ended88888\n\n\n\n")
+                        rospy.loginfo("\n\n\n\nNODE Ended88888\n\n\n\n")
+                        rospy.loginfo("\n\n\n\nNODE Ended88888\n\n\n\n")
                     is_gazebo_relaunch_needed = True
                     break
+            ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            env_output, env_error = ping_env.communicate()
+            if (env_error != ""):
+                rospy.loginfo("\n\n\n\nNODE Ended90909090909090\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended90909090909090\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended90909090909090\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended90909090909090\n\n\n\n")
+                
 
+            rospy.loginfo("\n\n\n\nbeforee sleep\n\n\n\n")
+            rospy.loginfo("\n\n\n\nbeforee sleep\n\n\n\n")
+            rospy.loginfo("\n\n\n\nbeforee sleep\n\n\n\n")
+            rospy.loginfo("\n\n\n\nbeforee sleep\n\n\n\n")
+            rospy.sleep(10)
             self.launch_one_racecar_one_ambulance.shutdown()
+            ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            env_output, env_error = ping_env.communicate()
+            if (env_error != ""):
+                rospy.loginfo("\n\n\n\nNODE Ended9999999\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended9999999\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended9999999\n\n\n\n")
+                rospy.loginfo("\n\n\n\nNODE Ended9999999\n\n\n\n")
             rospy.loginfo("\n\nshutdown one racecar one ambulance\n\n")
             rospy.sleep(60)
 
             if (is_gazebo_relaunch_needed == True):
                 force_shutdown = True
                 self.relaunchGazeboIfDead(force_shutdown)
+
+        ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        env_output, env_error = ping_env.communicate()
+        if (env_error != ""):
+            rospy.loginfo("\n\n\n\nNODE Ended101010101010\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended101010101010\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended101010101010\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended101010101010\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended101010101010\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended101010101010\n\n\n\n")
+
 
         ###
         #############case#########
