@@ -208,13 +208,13 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
             fp.writelines(empty_world_temp.render(data=empty_world_args))
 
         ####
-        self.rviz = ['racecar_rviz', 'view_two_navigation.launch']
-        self.rviz = roslaunch.rlutil.resolve_launch_arguments(self.rviz)
+        ##self.rviz = ['racecar_rviz', 'view_two_navigation.launch']
+        ##self.rviz = roslaunch.rlutil.resolve_launch_arguments(self.rviz)
 
         ####
-        self.one_racecar_one_ambulance_temp = temp_env.get_template("one_racecar_one_ambulance_temp.launch")
+        self.one_racecar_one_ambulance_temp = temp_env.get_template("one_racecar_one_ambulance_temp.launch") #TODO
 
-        self.one_racecar_one_ambulance = ['racecar_clear_ev_route', 'one_racecar_one_ambulance.launch']
+        self.one_racecar_one_ambulance = ['racecar_clear_ev_route', 'one_racecar_one_ambulance.launch'] #TODO
         self.one_racecar_one_ambulance = roslaunch.rlutil.resolve_launch_arguments(self.one_racecar_one_ambulance)
 
 
@@ -246,7 +246,23 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
         delete_model_client = rospy.ServiceProxy('gazebo/delete_model', DeleteModel)
         rospy.wait_for_service('gazebo/delete_model')
 
+        ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        env_output, env_error = ping_env.communicate()
+        if (env_error != ""):
+            rospy.loginfo("\n\n\n\nNODE Ended DDDDDD\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended DDDDDD\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended DDDDDD\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended DDDDDD\n\n\n\n")
+
         delete_model_client(self.r_name + str(vehicle_index + 1))
+
+        ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        env_output, env_error = ping_env.communicate()
+        if (env_error != ""):
+            rospy.loginfo("\n\n\n\nNODE Ended DDD222\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended DDD222\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended DDD222\n\n\n\n")
+            rospy.loginfo("\n\n\n\nNODE Ended DDD222\n\n\n\n")
 
 
     def relaunchGazeboIfDead(self,force_shutdown):
@@ -436,8 +452,8 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
                         rospy.loginfo("\n\n\n\nNODE Ended777777\n\n\n\n")
                         rospy.loginfo("\n\n\n\nNODE Ended777777\n\n\n\n")
                         rospy.loginfo("\n\n\n\nNODE Ended777777\n\n\n\n")
-                    del_model_process.terminate()
-                    rospy.loginfo("\n\after terminate\n\n")
+                    ##del_model_process.terminate()
+                    rospy.loginfo("\n\nafter terminate\n\n")
                     ping_env = subprocess.Popen(["rosnode", "ping", "-c", "1", "/clear_ev_route_basic_env"], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     env_output, env_error = ping_env.communicate()
                     if (env_error != ""):
@@ -628,7 +644,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
 
     def idMsgsCallback(self, idMsgs):
-        rospy.loginfo("\n\nidMsgs logged\n\n")
+        #rospy.loginfo("\n\nidMsgs logged\n\n")
         # extra check
         if (idMsgs.robot_num > (self.num_of_agents + self.num_of_EVs)):
             #raise Exception("NUMBER OF VEHICLES IN ENVIRONMENT IS GREATER THAN EXPECTED!") #TODO:
@@ -680,12 +696,13 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
 
         #1: steps == max_time_steps - 1
         time_step_number = rospy.Time.now() - self.episode_start_time
-        if(time_step_number.secs >= self.max_time_steps-1):
+        #if(time_step_number.secs >= self.max_time_steps-1): #TODO
+        if(time_step_number.secs >= 40):
             self.is_episode_done = 1
             return
         #2: goal reached
-        #elif(amb_abs_y >= self.amb_goal_x): #TODO
-        elif(amb_abs_y >= -35.5):
+        elif(amb_abs_y >= self.amb_goal_x): #TODO
+        #elif(amb_abs_y >= -35.5):
             # DONE: Change NET file to have total distance = 511. Then we can have the condition to compare with 500 directly.
             #return 2 #GOAL IS NOW 500-10-1 = 489 cells ahead. To avoid ambulance car eacaping
             self.is_episode_done = 2
@@ -694,8 +711,8 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
             if (agent_index != self.EV_index):
                 agent_abs_y = self.last_vehicle_ids.ids[agent_index].x_position #TODO: (LATER) misleading name: change to agent_abs_x
 
-                #if (agent_abs_y > self.amb_goal_x): #TODO: changed for test
-                if (agent_abs_y > -35):
+                if (agent_abs_y > self.amb_goal_x): #TODO: changed for test
+                #if (agent_abs_y > -35):
                     self.is_episode_done = 3
                     return
         if(self.is_gazebo_alive == False):
@@ -721,6 +738,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE: currently only handles a single ag
                 else:
                     self.is_activated = True
         return
+
 
     def close_launch_files(self):
         self.launch_empty_world.shutdown()
