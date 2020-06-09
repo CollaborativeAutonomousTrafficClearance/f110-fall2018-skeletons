@@ -405,8 +405,8 @@ def stanleyController(path_points, velocity, yaw):
     # calculate the heading
     psi = -yaw + np.arctan2((path_points[min_idx+1][1]-path_points[min_idx][1]),(path_points[min_idx+1][0]-path_points[min_idx][0]))
 
-    rospy.loginfo("Yaw:")
-    rospy.loginfo(yaw)
+    #rospy.loginfo("Yaw:")
+    #rospy.loginfo(yaw)
     # calculate an angle proportional to the cross-track error
     phi1 = np.arctan2((path_points[min_idx][1]), path_points[min_idx][0])
     phi2 = np.arctan2((path_points[min_idx+1][1] - path_points[min_idx][1]), (path_points[min_idx+1][0] - path_points[min_idx][0]))

@@ -426,8 +426,8 @@ def stanleyController(path_points, velocity, yaw):
     # calculate the heading
     psi = -yaw + np.arctan2((path_points[min_idx+1][1]-path_points[min_idx][1]),(path_points[min_idx+1][0]-path_points[min_idx][0]))
 
-    rospy.loginfo("Yaw:")
-    rospy.loginfo(yaw)
+    #rospy.loginfo("Yaw:")
+    #rospy.loginfo(yaw)
     # calculate an angle proportional to the cross-track error
     phi1 = np.arctan2((path_points[min_idx][1]), path_points[min_idx][0])
     phi2 = np.arctan2((path_points[min_idx+1][1] - path_points[min_idx][1]), (path_points[min_idx+1][0] - path_points[min_idx][0]))
@@ -535,8 +535,8 @@ class LaneKeeping:
 		wp_x,wp_y=get_waypoint_from_fit(distances_to_get_waypoints_at,left_fit_pixel,right_fit_pixel,\
 		            ym_per_pix,xm_per_pix,in_meter=True)
 
-		rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
-		rospy.loginfo(wp_y)
+		#rospy.loginfo("Y-coordinates of waypoints in the robot-centric coorinates:")
+		#rospy.loginfo(wp_y)
 
 		path_points = [((wp_x[0]),(wp_y[0]),(float(0.05))), ((wp_x[1]),(wp_y[1]),(0.05)), ((wp_x[2]),(wp_y[2]),(0.05))] # the three generated waypoints
 
