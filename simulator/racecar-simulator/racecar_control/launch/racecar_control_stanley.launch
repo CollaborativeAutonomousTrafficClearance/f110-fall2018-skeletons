@@ -31,7 +31,7 @@
   </node>
 
   <!-- stanley controller node -->
-  <node pkg="racecar_control" type="stanley_controller3.py" name="stanley_controller3" output="screen">
+  <node pkg="racecar_control" type="stanley_controller.py" name="stanley_controller" output="screen">
     <remap from="/vesc/odom" to="$(arg vesc_ns)/odom"/>
     <remap from="/drive_parameters" to="/$(arg r_name)/drive_parameters"/>
   </node>
