@@ -25,6 +25,8 @@ class KraussModel:
     def __init__(self):
 
         self.t_r = 1 # estimated driver reaction time ~ 1 sec
+        self.safety_gap_factor = 0.25 # safety gap between vehicles as a percentage of vehicle length - better changed to a parameter
+
         self.max_vel = rospy.get_param('max_vel') # maximum ego vehicle velocity allowed
         self.max_acc = rospy.get_param('max_acc') # maximum ego vehicle acceleration allowed
         self.vehicle_length = 0.58 # length of vehicles - please adjust this value if another vehicle model is used - value could be increased than actual to enforce a greater minimal gap between vehicles
@@ -37,6 +39,7 @@ class KraussModel:
         self.found_lead = 0 # boolean representing whether there is a leading vehicle infront of the ego vehicle
         self.lead_vel = 0 # leading vehicle's current velocity
         self.lead_x_pos = 0 # leading vehicle's current x position
+        self.lead_max_acc = 0 # leading vehicle's maximum acceleration allowed
         self.lead_gap = 0 # gap between leading and ego vehicles
 
         self.safe_vel = 0 # calculated safe velocity for ego vehicle based on Krauss model
@@ -85,6 +88,7 @@ class KraussModel:
                         self.found_lead = 1
                         self.lead_vel = idsMsg.ids[i].velocity
                         self.lead_x_pos = idsMsg.ids[i].x_position
+                        self.lead_max_acc = idsMsg.ids[i].max_acc
 
 
         if (self.found_lead == 1):
@@ -94,13 +98,22 @@ class KraussModel:
     # Calculates gap between leading and ego vehicles
     def calcGap(self):
 
-        self.lead_gap = self.lead_x_pos - self.x_pos - self.vehicle_length
+        self.lead_gap = self.lead_x_pos - self.x_pos - (1+self.safety_gap_factor)*self.vehicle_length
 
 
     # Calculates safe velocity for ego vehicle based on Krauss model
     def calcSafeVel(self):
 
-        self.safe_vel = self.lead_vel + ((self.lead_gap - (self.lead_vel * self.t_r))/(self.t_r + ((self.lead_vel + self.vel)/(2*self.max_acc))));
+        #self.safe_vel = self.lead_vel + ((self.lead_gap - (self.lead_vel * self.t_r))/(self.t_r + ((self.lead_vel + self.vel)/(2*self.max_acc))))
+
+        a = 1/(2*self.max_acc)
+        b = self.t_r
+        c = - ((self.lead_vel * self.lead_vel)/(2*self.lead_max_acc)) - self.lead_gap
+
+        if (((b*b) - (4*a*c)) < 0):
+            self.safe_vel = 0
+        else:
+            self.safe_vel = (-b + pow(((b*b) - (4*a*c)), 0.5))/(2*a)
         
 
     # Input data is Twist message from topic /cmd_vel

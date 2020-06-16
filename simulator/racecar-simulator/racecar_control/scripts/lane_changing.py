@@ -66,6 +66,7 @@ class LaneChange:
 
         ''' Variables needed by Krauss model '''
         self.t_r = 1 # estimated driver reaction time ~ 1 sec
+        self.safety_gap_factor = 0.25 # safety gap between vehicles as a percentage of vehicle length - better changed to a parameter
         self.max_vel = rospy.get_param('max_vel') # maximum ego vehicle velocity allowed
         self.max_acc = rospy.get_param('max_acc') # maximum ego vehicle acceleration allowed
         #self.max_dec = -self.max_acc # maximum ego vehicle deceleration allowed
@@ -139,13 +140,22 @@ class LaneChange:
         
 
     # Calculates the maximum velocity the rear vehicle could have in order to keep a safe distance between it and the leading vehicle
-    def calcMaxSafeVel(self, rear_x_pos, rear_vel, rear_max_acc, lead_x_pos, lead_vel):
+    def calcMaxSafeVel(self, rear_x_pos, rear_vel, rear_max_acc, lead_x_pos, lead_vel, lead_max_acc):
 
-        lead_gap = lead_x_pos - rear_x_pos - self.vehicle_length
+        lead_gap = lead_x_pos - rear_x_pos - (1+self.safety_gap_factor)*self.vehicle_length
 
-        safe_vel = lead_vel + ((lead_gap - (lead_vel * self.t_r))/(self.t_r + ((lead_vel + rear_vel)/(2*rear_max_acc))))
+        #safe_vel = lead_vel + ((lead_gap - (lead_vel * self.t_r))/(self.t_r + ((lead_vel + rear_vel)/(2*rear_max_acc))))
 
         #max_possible_safe_vel = min(rear_max_vel, (rear_vel + rear_max_acc*self.del_time), safe_vel)
+
+        a = 1/(2*rear_max_acc)
+        b = self.t_r
+        c = - ((lead_vel * lead_vel)/(2*lead_max_acc)) - lead_gap
+
+        if (((b*b) - (4*a*c)) < 0):
+            safe_vel = 0
+        else:
+            safe_vel = (-b + pow(((b*b) - (4*a*c)), 0.5))/(2*a)
 
         return safe_vel
 
@@ -312,7 +322,7 @@ class LaneChange:
                 hypoth_VEL = vehicle_A_max_VEL
 
         # check whether the relative velocity between ego vehicle and vehicle A is safe (using krauss model)
-        max_possible_safe_VEL = self.calcMaxSafeVel(hypoth_POS, hypoth_VEL, vehicle_A_max_ACC, lc_centerline, self.lc_vel)
+        max_possible_safe_VEL = self.calcMaxSafeVel(hypoth_POS, hypoth_VEL, vehicle_A_max_ACC, lc_centerline, self.lc_vel, self.max_acc)
         if (hypoth_VEL > max_possible_safe_VEL):
             return False
         else:
@@ -386,7 +396,7 @@ class LaneChange:
             return False 
         else:
             # check whether the relative velocity between ego vehicle and vehicle B is safe (using krauss model)
-            max_possible_safe_VEL = self.calcMaxSafeVel(vehicle_ego_final_POS, vehicle_ego_final_VEL, self.max_acc, vehicle_B_final_POS, vehicle_B_final_VEL)
+            max_possible_safe_VEL = self.calcMaxSafeVel(vehicle_ego_final_POS, vehicle_ego_final_VEL, self.max_acc, vehicle_B_final_POS, vehicle_B_final_VEL, vehicle_B_max_ACC)
             if (vehicle_ego_final_VEL > max_possible_safe_VEL):
                 return False
             else:
