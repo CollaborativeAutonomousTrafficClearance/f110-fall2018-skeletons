@@ -104,25 +104,58 @@ void CommunicationLayer::markCurrentFootprints()
     {
       // Calculate the current min and max of x and y to use in updating the bounds
       double tmp_min_x, tmp_max_x, tmp_min_y, tmp_max_y;
+
+      if (footprintPoints[0].x > getOriginX() + getSizeInMetersX()) {
+        continue;
+      }
+
+      if (footprintPoints[2].x < getOriginX()) {
+        continue;
+      }
+
+      if (footprintPoints[0].y > getOriginY() + getSizeInMetersY()) {
+        continue;
+      }
+
+      if (footprintPoints[2].y < getOriginY()) {
+        continue;
+      }
+
+      footprintPoints[0].x = std::min(std::max((getOriginX()), footprintPoints[0].x), getOriginX() + getSizeInMetersX());
+      footprintPoints[1].x = std::min(std::max((getOriginX()), footprintPoints[1].x), getOriginX() + getSizeInMetersX());
+      footprintPoints[2].x = std::min(std::max((getOriginX()), footprintPoints[2].x), getOriginX() + getSizeInMetersX());
+      footprintPoints[3].x = std::min(std::max((getOriginX()), footprintPoints[3].x), getOriginX() + getSizeInMetersX());
+
+      footprintPoints[0].y = std::min(std::max((getOriginY()), footprintPoints[0].y), getOriginY() + getSizeInMetersY());
+      footprintPoints[1].y = std::min(std::max((getOriginY()), footprintPoints[1].y), getOriginY() + getSizeInMetersY());
+      footprintPoints[2].y = std::min(std::max((getOriginY()), footprintPoints[2].y), getOriginY() + getSizeInMetersY());
+      footprintPoints[3].y = std::min(std::max((getOriginY()), footprintPoints[3].y), getOriginY() + getSizeInMetersY());
+
+      
+
       tmp_min_x = std::min(footprintPoints[0].x, footprintPoints[1].x);
       tmp_min_x = std::min(tmp_min_x, footprintPoints[2].x);
       tmp_min_x = std::min(tmp_min_x, footprintPoints[3].x);
       curr_min_x_ = std::min(tmp_min_x, curr_min_x_);
+      //curr_min_x_ = std::max((getOriginX()), curr_min_x_);
 
       tmp_min_y = std::min(footprintPoints[0].y, footprintPoints[1].y);
       tmp_min_y = std::min(tmp_min_y, footprintPoints[2].y);
       tmp_min_y = std::min(tmp_min_y, footprintPoints[3].y);
       curr_min_y_ = std::min(tmp_min_y, curr_min_y_);
+      //curr_min_y_ = std::max((getOriginY()), curr_min_y_);
 
       tmp_max_x = std::max(footprintPoints[0].x, footprintPoints[1].x);
       tmp_max_x = std::max(tmp_max_x, footprintPoints[2].x);
       tmp_max_x = std::max(tmp_max_x, footprintPoints[3].x);
       curr_max_x_ = std::max(tmp_max_x, curr_max_x_);
+      //curr_max_x_ = std::min((getOriginX() + getSizeInMetersX()), curr_max_x_);
 
       tmp_max_y = std::max(footprintPoints[0].y, footprintPoints[1].y);
       tmp_max_y = std::max(tmp_max_y, footprintPoints[2].y);
       tmp_max_y = std::max(tmp_max_y, footprintPoints[3].y);
       curr_max_y_ = std::max(tmp_max_y, curr_max_y_);
+      //curr_max_y_ = std::min((getOriginY() + getSizeInMetersY()), curr_max_y_);
 
       // Set the costmap layer cost of the footprint to LETHAL
       setConvexPolygonCost(footprintPoints, costmap_2d::LETHAL_OBSTACLE);
@@ -153,9 +186,14 @@ void CommunicationLayer::clearPreviousFootprints()
   clearingVector.push_back(pt2);
   clearingVector.push_back(pt3);
   clearingVector.push_back(pt4);
-   
-  // Set the costmap layer cost of any previous footprints to NO_INFORMATION
-  setConvexPolygonCost(clearingVector, costmap_2d::NO_INFORMATION);
+  
+  if(rolling_window_) {
+    resetMap(0, 0, getSizeInCellsX(), getSizeInCellsY());
+  }
+  else {
+    // Set the costmap layer cost of any previous footprints to NO_INFORMATION
+    setConvexPolygonCost(clearingVector, costmap_2d::NO_INFORMATION);
+  }
 }
 
 
