@@ -22,6 +22,9 @@ import threading
 lc_lock_feedback = threading.Lock()
 lc_lock_feedback.acquire()
 
+lc_lock_active = threading.Lock()
+lc_lock_active.acquire()
+
 class baseClient:
 
     def __init__(self, ActionTopicName):
@@ -159,8 +162,8 @@ class laneChangeClient(baseClient):
         self.set_acc(0) #lane change doesn't have acceleration in this module
 
         #Defining timings
-        self.lc_goal_activated_time = rospy.Time()   #Initially, 0
-        self.lc_goal_duration = rospy.Time()   #Initially, 0
+        self.lc_goal_activated_time = 0  #Initially, 0
+        self.lc_goal_duration = 0   #Initially, 0
 
         # is true only when lane change server is running
         self.is_being_executed = False 
@@ -176,8 +179,8 @@ class laneChangeClient(baseClient):
 
     def reset_timing(self):
         #Initialize the timings again
-        self.lc_goal_activated_time = rospy.Time()
-        self.lc_goal_duration = rospy.Time()
+        self.lc_goal_activated_time = 0
+        self.lc_goal_duration = 0
     
     def custom_local_planner_feedback_client(self, laneChangeActive):
         try:
@@ -210,6 +213,7 @@ class laneChangeClient(baseClient):
         self.lc_goal_activated_time = rospy.get_time()
         rospy.loginfo("Goal is currently active.")
         self.custom_local_planner_feedback_client(True)
+        lc_lock_active.release()
     
     def feedback_cb_lc(self, feedback): 
         
@@ -218,11 +222,14 @@ class laneChangeClient(baseClient):
         rospy.loginfo("Retuned feedback for this goal, lane change feasibility is %i.", self.current_feedback.mcFeedback) 
         
         #Releasing this lock to indicate that feasibility is done checking 
-        lc_lock_feedback.release()
+        #If the feedback is not released when the result is called, release feedback
+        if lc_lock_feedback.locked() and self.current_feedback != -1 and self.current_goal.mcGoal.action_source == 0:
+            lc_lock_feedback.release()
 
     def done_cb_lc(self, state, result): 
         #callback function to update result
         if result.mcResult != 0:   #If the lane change was feasible
+            time_now = rospy.get_time()
             self.lc_goal_duration = rospy.get_time() - self.lc_goal_activated_time
         else:
             self.lc_goal_duration = 0
@@ -235,7 +242,7 @@ class laneChangeClient(baseClient):
         rospy.loginfo("Retuned result for this goal, result is %i", self.current_result.mcResult)
 
         #If the feedback is not released when the result is called, release feedback
-        if lc_lock_feedback.locked():
+        if lc_lock_feedback.locked() and self.current_result != -1 and self.current_goal.mcGoal.action_source == 0:
             lc_lock_feedback.release()
         
 
@@ -394,7 +401,7 @@ class rl_master(action_source):
         self.vel_client.set_action_source(1)
 
         #delta time for lane keeping goal, lane change takes its desired time
-        self.delta_lk_time = 6
+        self.delta_lk_time = 13
         self.delta_lk_duration = rospy.Duration(self.delta_lk_time,0)
 
         #The response RL action time
@@ -432,6 +439,7 @@ class rl_master(action_source):
             self.lk_client.send_new_goal()  
             #keep waiting for the goal for the required delta time
             rospy.loginfo("Sending velocity goal for duration: %i", self.delta_lk_time)
+            rospy.loginfo("Acceleration is: %f", self.RL_acc)
             before = rospy.get_time()
             self.vel_client.send_goal_and_wait(self.delta_lk_duration) 
             duration = rospy.get_time() - before
@@ -450,12 +458,12 @@ class rl_master(action_source):
                 #Reset the time
                 self.reset_RL_resp_time()   
                 
-            elif self.vel_client.get_state()== 3:  #accomplished goal, SUCCEEDED
+            elif self.vel_client.get_state()== 3 or self.vel_client.get_state() == 2:  #accomplished goal, SUCCEEDED or PREEMPTED
                 rospy.loginfo("lane keeping with acceleration: %f was feasible", self.RL_acc)
                 self.RLActionFeasibility = True
 
                 #Set the RL action time as the lane keeping action defined duration
-                self.set_RL_resp_time(self.delta_lk_time)  
+                self.set_RL_resp_time(duration)  
             else:
                 rospy.loginfo("Undefined feasibility check, status is %i", self.vel_client.get_state())
         
@@ -463,10 +471,15 @@ class rl_master(action_source):
         else:     
             self.lc_client.send_new_goal()  
             #Blocking the function till lane change feasibility check is finished (Feedback changes)
-            rospy.loginfo("Waiting for lane change feasibility check to end")
-            lc_lock_feedback.acquire()
-            rospy.loginfo("lane change feasibility check ended")
+            rospy.loginfo("Waiting for lane change goal get activated")
+            lc_lock_active.acquire()
+            rospy.loginfo("Lane change goal got activated")
+            rospy.loginfo("waiting to get the result")
+            self.lc_client.block_till_result()
 
+            rospy.loginfo("lane change feasibility is %d", self.lc_client.get_feedback())
+            rospy.loginfo("lane change result is %d", self.lc_client.get_result())
+        
             # if lane change is infeasible, send back to RL master to chose another action
             if (self.lc_client.get_feedback() == 0 or self.lc_client.get_result() == 0):
                 rospy.loginfo("Lane change was infeasible; returning to RL master")
@@ -517,7 +530,7 @@ class clients_master:
             self.RL_activate()
 
         #handler for the RL policy action service when the RL requests an action to be performed 
-        rospy.loginfo("Move Car Client recieved a request from RL master")
+        rospy.loginfo("\n\n\n\n\n\n\n\nMove Car Client recieved a request from RL master")
         rospy.loginfo("The control action requested is %i", chosen_action_in.control_action)
         rospy.loginfo("The acceleration requested is %f", chosen_action_in.acc)
         #if the RL action policy service request's flag is false, this means the car is still
@@ -537,6 +550,8 @@ class clients_master:
             self.RL.lc_client.reset_timing()
 
             rospy.loginfo("Returning Response to RL master")
+            rospy.loginfo("Feasibility is %d", feasibility_Res)
+            rospy.loginfo("Time is %f", action_duration)
             #return the response when done, in order for the RL action generator to send a new action 
             resp = RLPolicyActionServiceResponse()
             resp.RLActionresult = feasibility_Res
