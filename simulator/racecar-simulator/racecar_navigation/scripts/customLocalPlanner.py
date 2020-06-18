@@ -17,21 +17,26 @@ class CustomLocalPlanner:
         self.newGoal = False
 
     def chosenAction(self,future_LaneInfo, current_LaneInfo):
+        "Lanes: "
+        "y: 0.5| Lane 0  |0| Lane 1 |-0.5| Lane 2 |-1 "
         #rospy.loginfo("\is one change executed? : %i\n", self.oneLaneChangeExecuted) #TODO
         #only send a new goal if lane change is not being executed 
         if self.oneLaneChangeExecuted == False:
-            if ((future_LaneInfo.map_array[1]  > current_LaneInfo.map_array[1])):
+            if ((future_LaneInfo.map_array[1]  < current_LaneInfo.map_array[1])):
                 self.final_action.control_action = 1  #left lane change
         
-            elif ((future_LaneInfo.map_array[1]  < current_LaneInfo.map_array[1])):
+            elif ((future_LaneInfo.map_array[1]  > current_LaneInfo.map_array[1])):
                 self.final_action.control_action = 2  #right lane change
 
             else:
                 self.final_action.control_action = 0 #lane keep
 
-            self.chosenAction_header.stamp = rospy.Time.now()
-            rospy.loginfo("\nthe goal to be sent to the move car action client is %i\n", self.final_action.control_action)
-            pub.publish(self.final_action)
+        else:
+            self.final_action.control_action = 0 #lane keep
+        
+        self.chosenAction_header.stamp = rospy.Time.now()
+        rospy.loginfo("\nthe goal to be sent to the move car action client is %i\n", self.final_action.control_action)
+        pub.publish(self.final_action)
 
     def listener_current_future_lanes(self):
         # listens to where the car is (current lane) and where the car wants to go (future lane)

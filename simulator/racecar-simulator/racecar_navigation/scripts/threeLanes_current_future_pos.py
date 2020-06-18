@@ -25,14 +25,14 @@ class LanesInfo:
         self.futureLanesInfo.map_array = self.which_lane(self.futurePosition)
         h = self.futureLanesInfo.header
         h.stamp = rospy.Time.now()
-        pub1.publish(self.futureLanesInfo)
+        pub2.publish(self.futureLanesInfo)
 
     def current_pos(self, msg):
         self.currentPosition = msg.pose.pose.position
         self.currentLanesInfo.map_array = self.which_lane(self.currentPosition)
         h = self.currentLanesInfo.header
         h.stamp = rospy.Time.now()
-        pub2.publish(self.currentLanesInfo)
+        pub1.publish(self.currentLanesInfo)
 
     def which_lane(self, position):
         x_pos = position.x
@@ -46,17 +46,24 @@ class LanesInfo:
         elif x_pos > 50:
             XRegion = 1
 
-        if XRegion == 0:
-            if (y_pos >= 0 and y_pos <= 0.5):
-                Lane = 0
-            elif (y_pos >= -0.5 and y_pos <= 0):
-                Lane = 1
-            elif (y_pos >= -1 and y_pos <= -0.5):
-                Lane = 2
-            else:
-                Lane = -1    
+        "Lanes: "
+        "y: 0.5| Lane 0  |0| Lane 1 |-0.5| Lane 2 |-1 "
+        #if (y_pos >= 0 and y_pos <= 0.5):
+        #    Lane = 0
+        #elif (y_pos >= -0.5 and y_pos <= 0):
+        #    Lane = 1
+        #elif (y_pos >= -1 and y_pos <= -0.5):
+        #    Lane = 2
+        #else:
+        #    Lane = -1    
+
+        # determining current lane
+        if (y_pos >= 0):
+            Lane = 0
+        elif (y_pos < -0.525):
+            Lane = 2;   
         else:
-            Lane = -1
+            Lane = 1
             
         
         map_array = [XRegion, Lane]
