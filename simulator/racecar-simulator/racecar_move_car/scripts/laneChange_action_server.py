@@ -430,7 +430,7 @@ class LaneChange:
 
         # get max vel and acc of the vehicle D
         vehicle_D_max_VEL = self.my_vehicle_ids.ids[self.vehicle_D].max_vel
-        vehicle_D_max_ACC = self.my_vehicle_ids.ids[self.vehicle_D].max_ac
+        vehicle_D_max_ACC = self.my_vehicle_ids.ids[self.vehicle_D].max_acc  #was mac_acc
 
         # calculate number of timesteps taken by ego vehicle to reach centerline 
         LCnoOfTS_half = float(self.lc_halfTime) / float(self.del_time)
