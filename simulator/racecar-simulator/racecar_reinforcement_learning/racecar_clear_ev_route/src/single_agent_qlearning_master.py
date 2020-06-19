@@ -101,6 +101,7 @@ class SAQLMaster:
     # Main execution function
     def execute(self):
 
+        rospy.loginfo("\n\n\n\n\n\n\n\n\n\n\n\n\n")
         rospy.loginfo("Starting Simulation.")
         resp = self.ENV_COMM.startSim(1, 1)
         if (resp.is_successful == False):
@@ -124,7 +125,7 @@ class SAQLMaster:
             self.reward_history_per_episode.append(episode_reward_list)
 
             rospy.loginfo("Saving a Q-table Version.")
-            ##self.RL_ALGO.save_q_table() #TODO uncomment
+            self.RL_ALGO.save_q_table() #TODO uncomment
 
 
             while(self.episode_num < (self.max_num_episodes - 1)):
@@ -148,12 +149,12 @@ class SAQLMaster:
                 self.reward_history_per_episode.append(episode_reward_list)
 
                 rospy.loginfo("Saving a Q-table Version.")
-                ##self.RL_ALGO.save_q_table() #TODO uncomment
+                self.RL_ALGO.save_q_table() #TODO uncomment
 
         
             # Save Q-table after episodes ended:
             rospy.loginfo("Saving Final Q-table.")
-            ##self.RL_ALGO.save_q_table() #TODO TODO: see when to call so that we have a constantly updated qtable saved
+            self.RL_ALGO.save_q_table() #TODO TODO: see when to call so that we have a constantly updated qtable saved
 
             rospy.loginfo("Closing Simulation.")
             self.ENV_COMM.closeSim()
@@ -247,7 +248,7 @@ class SAQLMaster:
             ######## Check if RL model should be disengaged ########
             if (self.is_activated == False):
                 rospy.loginfo("Disengaging the RL model for agent %d in episode %d because the EV is outside the agent's window.", self.robot_num, self.episode_num)
-                ##self.RL_ALGO.disengage() #TODO uncomment
+                self.RL_ALGO.disengage() #TODO uncomment
                 train_activity_lock.acquire()
             ########################################################
 
@@ -275,6 +276,9 @@ class SAQLMaster:
             # 3.1: Store state before taking action
             rospy.loginfo("Getting agent's state before taking action.")
             agent_state_before = self.ENV_COMM.getState(self.robot_num)
+            rospy.loginfo("\n\nAgent's State BEFORE Taking Ation: ")
+            rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_before.agent_vel, agent_state_before.agent_lane, agent_state_before.amb_vel, agent_state_before.amb_lane, agent_state_before.rel_amb_y)
+
 
             # ----------------------------------------------------------------- #
             # 3.2:   M O V E      O N E      S I M U L A T I O N       S T E P  #
@@ -283,7 +287,9 @@ class SAQLMaster:
             # ----------------------------------------------------------------- #
 
             rospy.loginfo("Taking action.") #TODO uncomment below
-            ##executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)  #TODO: raise error if no action is feasible
+            executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)  #TODO: raise error if no action is feasible
+            rospy.loginfo("\n\nAgent's State AFTER Taking Ation: ")
+            rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_after.agent_vel, agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
 
 
             # 3.3: measurements and if we are done check
@@ -293,18 +299,19 @@ class SAQLMaster:
 
             # 3.4: reward last step's chosen action
             rospy.loginfo("Calculating reward.") #TODO uncomment below
-            ##reward = self.ENV_COMM.calc_reward(agent_state_before.amb_vel, execution_time)
-            ##episode_reward += reward  # for history
-            ##episode_reward_list.append(reward)  # for history
+            reward = self.ENV_COMM.calcReward(agent_state_before.amb_vel, execution_time) #TODO need to be saved #FIXME #LOVE<3
+            rospy.loginfo("Reward is %f", reward)
+            episode_reward = episode_reward + reward  # for history
+            episode_reward_list.append(reward)  # for history
 
 
             # 3.5: update q table using backward reward logic
             rospy.loginfo("Updating Q-table.") #TODO uncomment below
-            ##self.RL_ALGO.update_q_table(reward, agent_state_after)
+            self.RL_ALGO.update_q_table(reward, agent_state_after)
 
             # Logging
             if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
-                ##rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward) #TODO uncomment
+                rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward) #TODO uncomment
                 rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_after.agent_vel, agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
 
 
@@ -323,7 +330,7 @@ class SAQLMaster:
                         episode_end_reason = "unknown"
 
                     rospy.loginfo("Episode: %d ended for the reason: %s", self.episode_num, episode_end_reason)
-                    #rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
+                    rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward)
                     rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_after.agent_vel, agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
                 break
             ########################################################
@@ -343,7 +350,7 @@ class SAQLMaster:
             rospy.loginfo("Episode: %d. FinalCumReward: %f.", self.episode_num, episode_reward)
 
 
-        return episode_reward, episode_reward_list
+        return episode_reward, episode_reward_list  
 
 
 if __name__ == "__main__":
