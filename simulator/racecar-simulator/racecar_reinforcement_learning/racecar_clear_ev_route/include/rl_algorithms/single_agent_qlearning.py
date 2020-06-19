@@ -119,13 +119,13 @@ class SingleAgentQlearning:
         self.new_observed_state_for_this_agent = new_observed_state_for_this_agent
 
         #Discretization
-        self.new_observed_state_INDEX_for_this_agent.agent_vel = self.discretize(np.arrray([self.new_observed_state_for_this_agent.agent_vel]), self.agent_vel_state_grid)  # [0,1,2,3,4,5] 
-        self.new_observed_state_INDEX_for_this_agent = self.new_observed_state_for_this_agent.agent_lane
-        self.new_observed_state_INDEX_for_this_agent.amb_vel = self.discretize(np.array([self.new_observed_state_for_this_agent.amb_vel]), self.amb_vel_state_grid)  # [0,1,2,3,4,5,6,7,8,9,10] 
-        self.new_observed_state_INDEX_for_this_agent.amb_lane = self.new_observed_state_for_this_agent.amb_lane
+        self.new_observed_state_INDEX_for_this_agent.agent_vel = int(self.discretize(np.array([self.new_observed_state_for_this_agent.agent_vel]), self.agent_vel_state_grid))  # [0,1,2,3,4,5] 
+        self.new_observed_state_INDEX_for_this_agent.agent_lane = int(self.new_observed_state_for_this_agent.agent_lane)
+        self.new_observed_state_INDEX_for_this_agent.amb_vel =int(self.discretize(np.array([self.new_observed_state_for_this_agent.amb_vel]), self.amb_vel_state_grid))  # [0,1,2,3,4,5,6,7,8,9,10] 
+        self.new_observed_state_INDEX_for_this_agent.amb_lane = int(self.new_observed_state_for_this_agent.amb_lane)
         self.new_observed_state_INDEX_for_this_agent.rel_amb_y = int(np.round(self.new_observed_state_for_this_agent.rel_amb_y) + abs(self.rel_amb_y_min))
 
-    #picks an action by exploitation or exploration 
+        #picks an action by exploitation or exploration 
     def pick_action(self, feasible_actions_indices):
         
         if (self.action_chosing_method == 'expLOIT'):  # test_mode_on will force the algorithm to choose exploitation.
@@ -135,17 +135,21 @@ class SingleAgentQlearning:
                     self.new_observed_state_INDEX_for_this_agent.amb_vel, 
                     self.new_observed_state_INDEX_for_this_agent.amb_lane, 
                     self.new_observed_state_INDEX_for_this_agent.rel_amb_y, feasible_actions_indices]) 
-            
+            rospy.loginfo("maximum value index in exploitation is %d\n", max_value_index)  
+
             desired_action_index = feasible_actions_indices[max_value_index]
+
+            rospy.loginfo("desired action index in exploitation is %d\n", desired_action_index) 
             desired_action_string = self.Actions[desired_action_index]
+            rospy.loginfo("desired action string in exploitation is %s\n", desired_action_string) 
             self.Action = desired_action_string
         
         elif(self.action_chosing_method == 'expLORE'):
             
-            action_index = random.choice(feasible_actions_indices)
-
-            desired_action_index = feasible_actions_indices[action_index]
-            desired_action_string = self.Actions[desired_action_index]
+            action_index = random.choice(feasible_actions_indices)  #action's number, not index in the array 
+            rospy.loginfo(" action in exploration is %d\n", action_index)
+            desired_action_string = self.Actions[action_index]
+            rospy.loginfo(" desired_action_string in exploration is %s\n", desired_action_string)
             self.Action = desired_action_string
     
     #action execution, return its feasibility and taken time if feasible
@@ -171,16 +175,18 @@ class SingleAgentQlearning:
             action_request_control_action = 0
             action_request_acc = -self.agent_acc
         
-        action_request_header = rospy.Time.now()
+        action_request_header = Header()
+        action_request_header.stamp = rospy.Time.now()
         deactivateRL = False
         
         try:
             rospy.wait_for_service('move_car/RL/RLPolicyActionService')
-            sendAction = rospy.ServiceProxy('move_car/RL/RLPolicyActionService',RLPolicyActionService, persistent=True)
+            rospy.loginfo("Sending a Request to the move car action client") 
+            sendAction = rospy.ServiceProxy('move_car/RL/RLPolicyActionService',RLPolicyActionService)
             resp = sendAction(action_request_header, action_request_control_action, action_request_acc, deactivateRL)
             action_feasibility = resp.RLActionresult
             action_taken_time = resp.RLActionTime
-            rospy.loginfo("response is %d", self.resp_feasibility)
+            rospy.loginfo("response is %d", action_feasibility)
     
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
@@ -191,10 +197,12 @@ class SingleAgentQlearning:
         return action_feasibility, action_taken_time
 
     
+    
     #final method to be used by RL master client, it takes the new observed state and returns the
     #action with the time taken for the it to be executed 
     def take_action(self, new_observed_state_for_this_agent):
-        
+        rospy.loginfo("\n\n\n\n\n\n") #TODO:Comment
+        rospy.loginfo("///////// Taking New Action /////////") #TODO:Comment
         #update the new observed state for the action
         self.update_new_observed_state_for_this_agent(new_observed_state_for_this_agent)
         #exploration or exploitation choice 
@@ -202,19 +210,30 @@ class SingleAgentQlearning:
         
         if (self.exp_exp_tradeoff > self.epsilon or self.test_mode_on):
             self.action_chosing_method = 'expLOIT'
+            rospy.loginfo("Action choosing method: Exploit\n") #TODO:Comment
         else:
             self.action_chosing_method = 'expLORE'
+            rospy.loginfo("Action choosing method: Explore\n") #TODO:Comment
 
-        #initially all actions are feasible
+        #initially all actions are feasible #TODO:old
+        self.actions_indices = []  
+        for act in self.Actions:
+            self.actions_indices.append(self.action_string_to_index_dict[act]) # 0 1 2 3 4
+        
         feasible_actions_indices = self.actions_indices
         found_feasible_action = False
 
+        iterations = 0  #TODO:new
         #keep trying to pick an action until it's feasible
         #remove the infeasible actions from feasible_actions_indices
         while(not found_feasible_action):
-            
+            iterations = iterations + 1
+            rospy.loginfo("Trying To find an action, iteration is %d",iterations)
+
             self.pick_action(feasible_actions_indices)
+            rospy.loginfo("Picked action is %s\n", self.Action) #TODO:Comment
             action_feasibility, action_taken_time = self.execute_action()
+            rospy.loginfo("Action Feasibility is %d, and time taken is %f\n", action_feasibility, action_taken_time) #TODO:Comment
             
             if (action_feasibility == True and action_taken_time > 0):  #If action was feasible and executed 
                 found_feasible_action = True
@@ -224,20 +243,22 @@ class SingleAgentQlearning:
 
         return self.Action, action_taken_time  #TODO: return a flag to indicate that there is no feasible action, if happens
 
+
     #sends a flag to move car action client to disengage RL and activate navigation
     def disengage(self):
         self.RLdisengage = True
-        action_request_header = rospy.Time.now()
+        action_request_header = Header()
+        action_request_header.stamp = rospy.Time.now()
 
         try:
             rospy.wait_for_service('move_car/RL/RLPolicyActionService')
-            sendAction = rospy.ServiceProxy('move_car/RL/RLPolicyActionService',RLPolicyActionService, persistent=True)
+            sendAction = rospy.ServiceProxy('move_car/RL/RLPolicyActionService',RLPolicyActionService)
             resp = sendAction(action_request_header, -1, -1, self.RLdisengage)
     
         except rospy.ServiceException, e:
                 rospy.wait_for_service('move_car/RL/RLPolicyActionService')
                 print "Service call failed: %s"%e
-    
+                
     def init_q_table(self,initial_value):
         '''
         #Q_table. Multi-dimensional np.ndarray, each dimension: either state partial assignment or action (string action -> integer)
