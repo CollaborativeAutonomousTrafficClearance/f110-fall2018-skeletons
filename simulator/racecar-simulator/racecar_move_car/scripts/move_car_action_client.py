@@ -310,7 +310,7 @@ class nav_master(action_source):
         #self.goalReached = goalReached_in
         self.current_nav_control_action = chosen_action_in.control_action
         
-        rospy.loginfo("Received nav action in move_car action client, action is %i",self.current_nav_control_action )
+        #rospy.loginfo("Received nav action in move_car action client, action is %i",self.current_nav_control_action )
 
         #If the action is lane change and was lane, update it's direction
         if chosen_action_in.control_action > 0: 
@@ -323,11 +323,13 @@ class nav_master(action_source):
                 if self.current_nav_control_action > 0:
                     # send goals
                     self.call_servers()
+                    rospy.loginfo("Received nav action in move_car action client, action is %i",self.current_nav_control_action )
                 else:
                     # if the control action is lane keeping and changed than the last control action
                     if (self.last_nav_control_action != self.current_nav_control_action):
                         # call servers to send goals
                         self.call_servers()
+                        rospy.loginfo("Received nav action in move_car action client, action is %i",self.current_nav_control_action )
             # for any other case, ignore this thread
 
 
@@ -401,7 +403,8 @@ class rl_master(action_source):
         self.vel_client.set_action_source(1)
 
         #delta time for lane keeping goal, lane change takes its desired time
-        self.delta_lk_time = 13
+        self.delta_lk_time =  10
+
         self.delta_lk_duration = rospy.Duration(self.delta_lk_time,0)
 
         #The response RL action time
