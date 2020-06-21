@@ -117,7 +117,7 @@ class BasicEnvComm:
         rospy.wait_for_service('/reward')
         try:
             resp = self.reward_client(amb_last_velocity, execution_time)
-            return resp
+            return resp.reward
         except rospy.ServiceException as e:
             print("Reward service call failed: %s"%e)
             rospy.wait_for_service('/reward')

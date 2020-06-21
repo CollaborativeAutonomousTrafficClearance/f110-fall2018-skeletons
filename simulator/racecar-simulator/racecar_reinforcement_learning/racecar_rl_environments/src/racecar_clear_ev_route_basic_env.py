@@ -261,10 +261,10 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
         # NOTE #: this launch file should be changed if the environment is extended to handle more than 1 agent & 1 EV 
 
         # get template
-        self.one_racecar_one_ambulance_temp = temp_env.get_template("one_racecar_one_ambulance_temp3.launch") #TODO TODO OOOO
+        self.one_racecar_one_ambulance_temp = temp_env.get_template("one_racecar_one_ambulance_temp.launch")
 
         # get full file path from package and script name
-        self.one_racecar_one_ambulance = ['racecar_clear_ev_route', 'one_racecar_one_ambulance3.launch'] #TODO TODO OOOO
+        self.one_racecar_one_ambulance = ['racecar_clear_ev_route', 'one_racecar_one_ambulance.launch']
         self.one_racecar_one_ambulance = roslaunch.rlutil.resolve_launch_arguments(self.one_racecar_one_ambulance)
 
 
@@ -368,23 +368,25 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
         ## Agent args ##
 
         # set agent's start point to be such that interaction between it and the EV within the episode is guaranteed -- for training purposes
-        one_racecar_one_ambulance_args['agent_start_x'] = random.randint(-18, 12) #TODO: (LATER) let min and max position depend on EV's starting/ening position and vehicles' max vel/acc -- current values are calculated for default values and are -18.5 to 12 but rounded for simplicity
+        self.agent_start_x = random.randint(-18, -18)
+        one_racecar_one_ambulance_args['agent_start_x'] = self.agent_start_x #TODO: (LATER) let min and max position depend on EV's starting/ening position and vehicles' max vel/acc -- current values are calculated for default values and are -18.5 to 12 but rounded for simplicity # -18, 12
         # select a random start lane for the agent
-        one_racecar_one_ambulance_args['agent_start_y'] = self.genRandLanePos()
-
+        #one_racecar_one_ambulance_args['agent_start_y'] = self.genRandLanePos()
+        one_racecar_one_ambulance_args['agent_start_y'] = -0.2625
         # set the agent's max vel/acc as specified by the input parameters
         one_racecar_one_ambulance_args['agent_max_vel'] = self.agent_max_vel
         one_racecar_one_ambulance_args['agent_max_acc'] = self.agent_max_acc
 
         # set the agent's goal to be the same as the EV's goal but in the same lane as the agent's start lane
-        ##one_racecar_one_ambulance_args['agent_goal_x'] = self.amb_goal_x #TODO TODO OOOOO
-        ##one_racecar_one_ambulance_args['agent_goal_y'] = one_racecar_one_ambulance_args['agent_start_y'] #TODO TODO OOOOO
+        one_racecar_one_ambulance_args['agent_goal_x'] = self.amb_goal_x
+        one_racecar_one_ambulance_args['agent_goal_y'] = one_racecar_one_ambulance_args['agent_start_y']
 
         ## EV args ##
 
         # select a random start lane for the agent
-        one_racecar_one_ambulance_args['EV_start_y'] = self.genRandLanePos()
-
+        #one_racecar_one_ambulance_args['EV_start_y'] = self.genRandLanePos()
+        one_racecar_one_ambulance_args['EV_start_y'] = -0.2625
+        
         # set the agent's start position and max vel/acc as specified by the input parameters
         one_racecar_one_ambulance_args['EV_start_x'] = self.amb_start_x
         one_racecar_one_ambulance_args['EV_max_vel'] = self.emer_max_speed
@@ -424,6 +426,9 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
     # Starts the simulation
     def startSim(self):
 
+        # init
+        self.episode_start_time = -1
+
         ## Gazebo launch ##
 
         # launch gazebo
@@ -457,28 +462,32 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
         with open(self.one_racecar_one_ambulance[0], "w") as fp:
             fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
 
-        # set the episode start time
-        self.episode_start_time = rospy.Time.now()
 
         # launch the vehicles' launch file
         rospy.loginfo("\n\nLaunching one_racecar_one_ambulance.\n\n")
         self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
         self.launch_one_racecar_one_ambulance.start()
+        rospy.sleep(30)
+        rospy.loginfo("\n\nDone launching one_racecar_one_ambulance.\n\n")
+
 
         # block till nodes launch and EV reaches max velocity
         simReady_lock.acquire() #TODO: might consider setting a timeout and pinging critical nodes
         rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
-        rospy.loginfo("\n\n\n\n\nacquireeeeeeeeeeee\n\n\n\n\n")
-        rospy.loginfo("\n\n\n\n\nacquireeeeeeeeee\n\n\n\n\n")
-        rospy.loginfo("\n\n\n\n\nacquireeeeeeeee\n\n\n\n\n")
-        rospy.loginfo("\n\n\n\n\nacquireeeeeeeeee\n\n\n\n\n")
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
+
 
         # reset the episode start time
-        self.episode_start_time = rospy.Time.now()
+        self.episode_start_time = rospy.Time.now().secs
 
     
     # Resets the simulation
     def resetSim(self):
+
+        # init
+        self.episode_start_time = -1
 
         ## Shutdown vehicles' nodes and relaunch gazebo if needed ##
 
@@ -543,19 +552,25 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
         with open(self.one_racecar_one_ambulance[0], "w") as fp:
             fp.writelines(self.one_racecar_one_ambulance_temp.render(data=one_racecar_one_ambulance_args))
 
-        # set the episode start time
-        self.episode_start_time = rospy.Time.now()
-        
         # launch the vehicles' launch file
         rospy.loginfo("\n\nLaunching one_racecar_one_ambulance.\n\n")
         self.launch_one_racecar_one_ambulance = roslaunch.parent.ROSLaunchParent(self.uuid, self.one_racecar_one_ambulance, force_screen=True, verbose=True)
         self.launch_one_racecar_one_ambulance.start()
-        rospy.sleep(30) # TODO TODO TODO: let it be a lock till amb max vel
+        rospy.sleep(30)
         rospy.loginfo("\n\nDone launching one_racecar_one_ambulance.\n\n")
+        
+
+        # block till nodes launch and EV reaches max velocity
+        simReady_lock.acquire() #TODO: might consider setting a timeout and pinging critical nodes
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
+        rospy.loginfo("\n\nSimulation ready and EV has maximum velocity.\n\n")
 
 
         # reset the episode start time
-        self.episode_start_time = rospy.Time.now()
+        self.episode_start_time = rospy.Time.now().secs
 
 
     # Closes the simulation
@@ -686,15 +701,13 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
         :logic: Calculate reward to agent from current state
         :param amb_last_velocity: float, previous velocity the EV/ambulance had
         :return: reward (either step reward or final reward)
-
-
         :Notes:
         #Simulation Time is not allowed to continue after 20*optimal_time (20* time steps with ambulance at its maximum speed)
         '''
 
         if(self.is_episode_done and self.give_final_reward): # calculate a final reward
 
-            number_of_time_steps = rospy.Time.now() - self.episode_start_time # time spent in episode so far
+            number_of_time_steps = rospy.Time.now().secs - self.episode_start_time # time spent in episode so far
 
             # linear reward. y= mx +c. y: reward, x: ration between time achieved and optimal time. m: slope. c: y-intercept
             m = ( (self.max_final_reward - self.min_final_reward) *20 ) /19 # slope for straight line equation to calculate final reward
@@ -720,7 +733,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
             #debug#print(f'c: {c}, m: {m}, accel: {(self.emer.spd - amb_last_velocity)}')
             #rospy.loginfo("if condition = : %f", abs(amb_last_velocity-self.emer_max_speed))
             
-            if ( abs(amb_last_velocity-self.emer_max_speed) <= 1e-10 ):
+            if ( abs(amb_last_velocity-self.emer_max_speed) <= 0.01 ):
             # since ambulance had maximum speed and speed did not change that much; unless we applied the code below.. the acceleration
             # will be wrongly assumed to be zero. Although the ambulance probably could have accelerated more, but this is its maximum velocity.
                 reward = self.max_step_reward/execution_time #same reward as maximum acceleration # divide by action execution time for normalization purposes
@@ -759,16 +772,13 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
 
             # indicate that simulation is ready if EV almost reached max vel
             if (idMsgs.id.velocity >= (self.emer_max_speed - self.emer_max_accel)):
-                rospy.loginfo("\n\n\n\n\nsupposed to unlockkkkkkk\n\n\n\n\n")
-                rospy.loginfo("\n\n\n\n\nsupposed to unlockkkkkkk\n\n\n\n\n")
-                rospy.loginfo("\n\n\n\n\nsupposed to unlockkkkkkk\n\n\n\n\n")
-                rospy.loginfo("\n\n\n\n\nsupposed to unlockkkkkkk\n\n\n\n\n")
                 if (simReady_lock.locked() == True):
                     simReady_lock.release()
-                    rospy.loginfo("\n\n\n\n\nreleasedddd\n\n\n\n\n")
-                    rospy.loginfo("\n\n\n\n\nnreleasedddd\n\n\n\n\n")
-                    rospy.loginfo("\n\n\n\n\nnreleasedddd\n\n\n\n\n")
-                    rospy.loginfo("\n\n\n\n\nnreleasedddd\n\n\n\n\n")
+                    rospy.loginfo("\n\nEV has maximum velocity now (Released lock).\n\n")
+                    rospy.loginfo("\n\nEV has maximum velocity now (Released lock).\n\n")
+                    rospy.loginfo("\n\nEV has maximum velocity now (Released lock).\n\n")
+                    rospy.loginfo("\n\nEV has maximum velocity now (Released lock).\n\n")
+
 
 
         # check if episode is done or RL should be activated for the agent 
@@ -791,9 +801,9 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
         ## Reason 1: time steps >= max_time_steps ##
 
         # calculate time steps taken in episode so far
-        time_step_number = rospy.Time.now() - self.episode_start_time
-        #if(time_step_number.secs >= self.max_time_steps): #TODO TODO TODO
-        if(time_step_number.secs >= 40):
+        time_step_number = rospy.Time.now().secs - self.episode_start_time
+        #if((self.episode_start_time != -1) and (time_step_number >= 20)):
+        if((self.episode_start_time != -1) and (time_step_number >= self.max_time_steps)):
             self.is_episode_done = 1
             return
 
@@ -813,6 +823,10 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
 
         ## Reason 4: gazebo died ##
         if(self.is_gazebo_alive == False):
+            self.is_episode_done = 4
+            return
+
+        if(((self.last_vehicle_ids.ids[0].x_position - self.agent_start_x) < 0.01) or ((self.last_vehicle_ids.ids[self.EV_index].x_position - self.amb_start_x) < 0.01)):
             self.is_episode_done = 4
             return
 

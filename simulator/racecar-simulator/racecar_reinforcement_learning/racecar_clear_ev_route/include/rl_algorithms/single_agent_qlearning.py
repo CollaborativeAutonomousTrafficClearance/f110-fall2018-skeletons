@@ -117,6 +117,7 @@ class SingleAgentQlearning:
         self.last_observed_state_INDEX_for_this_agent = self.new_observed_state_INDEX_for_this_agent
 
         self.new_observed_state_for_this_agent = new_observed_state_for_this_agent
+        rospy.loginfo("New Observed State is %f,%d,%f,%d,%f",self.new_observed_state_for_this_agent.agent_vel, self.new_observed_state_for_this_agent.agent_lane, self.new_observed_state_for_this_agent.amb_vel,self.new_observed_state_for_this_agent.amb_lane,self.new_observed_state_for_this_agent.rel_amb_y)
 
         #Discretization
         self.new_observed_state_INDEX_for_this_agent.agent_vel = int(self.discretize(np.array([self.new_observed_state_for_this_agent.agent_vel]), self.agent_vel_state_grid))  # [0,1,2,3,4,5] 
@@ -125,7 +126,15 @@ class SingleAgentQlearning:
         self.new_observed_state_INDEX_for_this_agent.amb_lane = int(self.new_observed_state_for_this_agent.amb_lane)
         self.new_observed_state_INDEX_for_this_agent.rel_amb_y = int(np.round(self.new_observed_state_for_this_agent.rel_amb_y) + abs(self.rel_amb_y_min))
 
-        #picks an action by exploitation or exploration 
+        rospy.loginfo("New Observed State INDEX is %f,%d,%f,%d,%f",self.new_observed_state_INDEX_for_this_agent.agent_vel, self.new_observed_state_INDEX_for_this_agent.agent_lane, self.new_observed_state_INDEX_for_this_agent.amb_vel,self.new_observed_state_INDEX_for_this_agent.amb_lane,self.new_observed_state_INDEX_for_this_agent.rel_amb_y)
+
+        if ((self.new_observed_state_INDEX_for_this_agent.agent_vel >= self.agent_vel_dimension) or (self.new_observed_state_INDEX_for_this_agent.agent_lane >= self.agent_lane_dimension) or (self.new_observed_state_INDEX_for_this_agent.amb_vel >= self.amb_vel_dimension) or (self.new_observed_state_INDEX_for_this_agent.amb_lane>= self.amb_lane_dimension) or (self.new_observed_state_INDEX_for_this_agent.rel_amb_y >= self.rel_amb_y_dimension) or (self.new_observed_state_INDEX_for_this_agent.rel_amb_y < 0)):
+            rospy.loginfo("\n\n\n\nSTATE IS OUTSIDE Q TABLE!!!!!!\n\n\n\n\n")
+            return False
+        else:
+            return True
+    
+    #picks an action by exploitation or exploration 
     def pick_action(self, feasible_actions_indices):
         
         if (self.action_chosing_method == 'expLOIT'):  # test_mode_on will force the algorithm to choose exploitation.
@@ -157,7 +166,13 @@ class SingleAgentQlearning:
     def execute_action(self):
         action_feasibility = False
         action_taken_time = 0
-        
+
+        #FIXME this is for testing purposes onlyyyyyyyy
+        if self.Action == 'change_left':
+            self.Action = 'dec'
+        if self.Action == 'change_right':
+            self.Action = 'no_acc'
+
         #update request parameters 
         if (self.Action == 'change_left'):
             action_request_control_action = 1
@@ -201,48 +216,54 @@ class SingleAgentQlearning:
     #final method to be used by RL master client, it takes the new observed state and returns the
     #action with the time taken for the it to be executed 
     def take_action(self, new_observed_state_for_this_agent):
-        rospy.loginfo("\n\n\n\n\n\n") #TODO:Comment
-        rospy.loginfo("///////// Taking New Action /////////") #TODO:Comment
+        rospy.loginfo("\n\n\n\n\n\n") 
+        rospy.loginfo("///////// Taking New Action /////////") 
+        
+                
         #update the new observed state for the action
-        self.update_new_observed_state_for_this_agent(new_observed_state_for_this_agent)
-        #exploration or exploitation choice 
-        self.exp_exp_tradeoff = random.uniform(0,1) #TODO
-        
-        if (self.exp_exp_tradeoff > self.epsilon or self.test_mode_on):
-            self.action_chosing_method = 'expLOIT'
-            rospy.loginfo("Action choosing method: Exploit\n") #TODO:Comment
+        toTakeAction = self.update_new_observed_state_for_this_agent(new_observed_state_for_this_agent)
+        if toTakeAction == False:
+            return "NOACTION", 1
         else:
-            self.action_chosing_method = 'expLORE'
-            rospy.loginfo("Action choosing method: Explore\n") #TODO:Comment
-
-        #initially all actions are feasible #TODO:old
-        self.actions_indices = []  
-        for act in self.Actions:
-            self.actions_indices.append(self.action_string_to_index_dict[act]) # 0 1 2 3 4
-        
-        feasible_actions_indices = self.actions_indices
-        found_feasible_action = False
-
-        iterations = 0  #TODO:new
-        #keep trying to pick an action until it's feasible
-        #remove the infeasible actions from feasible_actions_indices
-        while(not found_feasible_action):
-            iterations = iterations + 1
-            rospy.loginfo("Trying To find an action, iteration is %d",iterations)
-
-            self.pick_action(feasible_actions_indices)
-            rospy.loginfo("Picked action is %s\n", self.Action) #TODO:Comment
-            action_feasibility, action_taken_time = self.execute_action()
-            rospy.loginfo("Action Feasibility is %d, and time taken is %f\n", action_feasibility, action_taken_time) #TODO:Comment
+            #exploration or exploitation choice 
+            self.exp_exp_tradeoff = random.uniform(0,1) #TODO
             
-            if (action_feasibility == True and action_taken_time > 0):  #If action was feasible and executed 
-                found_feasible_action = True
+            if (self.exp_exp_tradeoff > self.epsilon or self.test_mode_on):
+                self.action_chosing_method = 'expLOIT'
+                rospy.loginfo("Action choosing method: Exploit\n") #TODO:Comment
             else:
-                found_feasible_action = False
-                feasible_actions_indices.remove(self.action_string_to_index_dict[self.Action])
+                self.action_chosing_method = 'expLORE'
+                rospy.loginfo("Action choosing method: Explore\n") #TODO:Comment
 
-        return self.Action, action_taken_time  #TODO: return a flag to indicate that there is no feasible action, if happens
+            #initially all actions are feasible #TODO:old
+            self.actions_indices = []  
+            for act in self.Actions:
+                self.actions_indices.append(self.action_string_to_index_dict[act]) # 0 1 2 3 4
+            
+            feasible_actions_indices = self.actions_indices
+            found_feasible_action = False
 
+            iterations = 0  #TODO:new
+            #keep trying to pick an action until it's feasible
+            #remove the infeasible actions from feasible_actions_indices
+            while(not found_feasible_action):
+                iterations = iterations + 1
+                rospy.loginfo("Trying To find an action, iteration is %d",iterations)
+
+                self.pick_action(feasible_actions_indices)
+                rospy.loginfo("Picked action is %s\n", self.Action) #TODO:Comment
+                action_feasibility, action_taken_time = self.execute_action()
+                rospy.loginfo("Action Feasibility is %d, and time taken is %f\n", action_feasibility, action_taken_time) #TODO:Comment
+                
+                if (action_feasibility == True and action_taken_time > 0):  #If action was feasible and executed 
+                    found_feasible_action = True
+                else:
+                    found_feasible_action = False
+                    feasible_actions_indices.remove(self.action_string_to_index_dict[self.Action])
+
+            return self.Action, action_taken_time  #TODO: return a flag to indicate that there is no feasible action, if happens
+
+    
 
     #sends a flag to move car action client to disengage RL and activate navigation
     def disengage(self):
@@ -286,14 +307,16 @@ class SingleAgentQlearning:
         amb_vel_bins = int(np.ceil(((self.amb_vel_max - self.amb_vel_min)/self.amb_acc)))
         self.amb_vel_state_grid = self.create_uniform_grid(self.amb_vel_min, self.amb_vel_max, amb_vel_bins, self.amb_acc)
         
-        agent_vel_dimension = agent_vel_bins
-        agent_lane_dimension = self.agent_lane_count
-        amb_vel_dimension = amb_vel_bins
-        amb_lane_dimension = self.amb_lane_count
-        rel_amb_y_dimension = abs(self.rel_amb_y_max) + 1 + abs(self.rel_amb_y_min)
-        actions_dimension = self.action_space
-        
-        self.q_table = np.zeros((agent_vel_dimension, agent_lane_dimension, amb_vel_dimension, amb_lane_dimension, rel_amb_y_dimension, actions_dimension))
+        self.agent_vel_dimension = agent_vel_bins
+        self.agent_lane_dimension = self.agent_lane_count
+        self.amb_vel_dimension = amb_vel_bins
+        self.amb_lane_dimension = self.amb_lane_count
+        self.rel_amb_y_dimension = abs(self.rel_amb_y_max) + 1 + abs(self.rel_amb_y_min)
+        self.actions_dimension = self.action_space
+        rospy.loginfo("\n\n\n\n\n\n\n\n\n")
+        rospy.loginfo("init_table_dimensions")
+        rospy.loginfo("\nagent_vel_dimension is %d, agent_lane_dimension is %d, amb_vel_dimension is %d, amb_lane_dimension is %d, rel_amb_y_dimension is %d, actions_dimension is %d", self.agent_vel_dimension, self.agent_lane_dimension, self.amb_vel_dimension, self.amb_lane_dimension, self.rel_amb_y_dimension, self.actions_dimension)
+        self.q_table = np.zeros((self.agent_vel_dimension, self.agent_lane_dimension, self.amb_vel_dimension, self.amb_lane_dimension, self.rel_amb_y_dimension, self.actions_dimension))
         
         #Initialize all the Q table with -1000 as a flag for unvisited action
         self.q_table.fill(initial_value)
@@ -331,28 +354,38 @@ class SingleAgentQlearning:
             new_amb_vel_index = self.new_observed_state_INDEX_for_this_agent.amb_vel
             new_amb_lane_index = self.new_observed_state_INDEX_for_this_agent.amb_lane
             new_rel_amb_y_index = self.new_observed_state_INDEX_for_this_agent.rel_amb_y
+            rospy.loginfo("\n\n\n\n\n\n")
+            rospy.loginfo("Index for q table")
+
+            enter_q_table = True
+            rospy.loginfo("\nagent_vel_index is %d, agent_lane_index is %d, amb_vel_index is %d, amb_lane_index is %d,  rel_amb_y_index is %d, action_index is %d",agent_vel_index,agent_lane_index, amb_vel_index, amb_lane_index, rel_amb_y_index,action_index)
+            if ((agent_vel_index >= self.agent_vel_dimension) or (agent_lane_index >= self.agent_lane_dimension) or (amb_vel_index >= self.amb_vel_dimension) or (amb_lane_index >= self.amb_lane_dimension) or (rel_amb_y_index >= self.rel_amb_y_dimension)):
+                rospy.loginfo("\n\n\n\nSTATE IS OUTSIDE Q TABLE!!!!!!\n\n\n\n\n")
+                enter_q_table = False
 
             # Q(s,a):
-            q_of_s_a_value = \
-            self.q_table[agent_vel_index][agent_lane_index][amb_vel_index][amb_lane_index][rel_amb_y_index][action_index]
+            if enter_q_table == True:
+                q_of_s_a_value = \
+                self.q_table[agent_vel_index][agent_lane_index][amb_vel_index][amb_lane_index][rel_amb_y_index][action_index]
 
-            #ROS edits in problem forumation 
-            if (q_of_s_a_value == -1000):
-                q_of_s_a_value = 0
+                #ROS edits in problem forumation 
+                if (q_of_s_a_value == -1000):
+                    q_of_s_a_value = 0
 
-            # max Q(s',a')
-            max_q_of_s_value_new = np.max(self.q_table[
+                # max Q(s',a')
+                max_q_of_s_value_new = np.max(self.q_table[
                                               new_agent_vel_index, new_agent_lane_index, new_amb_vel_index, new_amb_lane_index, new_rel_amb_y_index])
-            if (max_q_of_s_value_new == -1000):
-                max_q_of_s_value_new = 0
+                if (max_q_of_s_value_new == -1000):
+                    max_q_of_s_value_new = 0
             
-            # Actual Update:
-            q_of_s_a_value = q_of_s_a_value + self.learning_rate * (reward + self.gamma * max_q_of_s_value_new - q_of_s_a_value)
+                # Actual Update:
+                q_of_s_a_value = q_of_s_a_value + self.learning_rate * (reward + self.gamma * max_q_of_s_value_new - q_of_s_a_value)
 
 
-            # actual update step:
-            self.q_table[agent_vel_index][agent_lane_index][amb_vel_index][amb_lane_index][rel_amb_y_index][
-                action_index] = q_of_s_a_value
+                # actual update step:
+                self.q_table[agent_vel_index][agent_lane_index][amb_vel_index][amb_lane_index][rel_amb_y_index][action_index] = q_of_s_a_value
+
+            
 
     
     def save_q_table(self, variables_folder_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),"saved_variables")):

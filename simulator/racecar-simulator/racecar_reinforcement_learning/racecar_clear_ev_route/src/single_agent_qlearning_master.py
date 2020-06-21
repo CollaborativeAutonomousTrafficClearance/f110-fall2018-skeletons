@@ -83,7 +83,7 @@ class SAQLMaster:
         if (self.test_mode_on == True):
             # release lock if RL model was disengaged and needs to be engaged noew
             if ((self.is_activated == False) and (inputMsg.is_activated == True)):
-                if (test_activity_lock.locked() == True):
+                #if (test_activity_lock.locked() == True):
                     test_activity_lock.release()
             self.is_activated = inputMsg.is_activated
         # in case of training
@@ -249,7 +249,10 @@ class SAQLMaster:
             if (self.is_activated == False):
                 rospy.loginfo("Disengaging the RL model for agent %d in episode %d because the EV is outside the agent's window.", self.robot_num, self.episode_num)
                 self.RL_ALGO.disengage() #TODO uncomment
-                train_activity_lock.acquire()
+                #train_activity_lock.acquire()
+                while ((self.is_activated == False) and (self.is_episode_done == 0)):
+                    continue
+
             ########################################################
 
             ############### Check if episode is done ###############
@@ -288,32 +291,41 @@ class SAQLMaster:
 
             rospy.loginfo("Taking action.") #TODO uncomment below
             executed_action, execution_time = self.RL_ALGO.take_action(agent_state_before)  #TODO: raise error if no action is feasible
-            rospy.loginfo("\n\nAgent's State AFTER Taking Ation: ")
-            rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_after.agent_vel, agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
-
+           
 
             # 3.3: measurements and if we are done check
             rospy.loginfo("Getting agent's state after taking action.")
             agent_state_after = self.ENV_COMM.getState(self.robot_num)
+            rospy.loginfo("\n\nAgent's State AFTER Taking Ation: ")
+            rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_after.agent_vel, agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
 
 
-            # 3.4: reward last step's chosen action
-            rospy.loginfo("Calculating reward.") #TODO uncomment below
-            reward = self.ENV_COMM.calcReward(agent_state_before.amb_vel, execution_time) #TODO need to be saved #FIXME #LOVE<3
-            rospy.loginfo("Reward is %f", reward)
-            episode_reward = episode_reward + reward  # for history
-            episode_reward_list.append(reward)  # for history
+
+            if executed_action != "NOACTION":
+                # 3.4: reward last step's chosen action
+                rospy.loginfo("Calculating reward.") #TODO uncomment below
+                reward = self.ENV_COMM.calcReward(agent_state_before.amb_vel, execution_time) #TODO need to be saved #FIXME #LOVE<3
+                rospy.loginfo("Reward is %f", reward)
+                episode_reward = episode_reward + reward  # for history
+                episode_reward_list.append(reward)  # for history
 
 
-            # 3.5: update q table using backward reward logic
-            rospy.loginfo("Updating Q-table.") #TODO uncomment below
-            self.RL_ALGO.update_q_table(reward, agent_state_after)
+                # 3.5: update q table using backward reward logic
+                rospy.loginfo("Updating Q-table.") #TODO uncomment below
+                self.RL_ALGO.update_q_table(reward, agent_state_after)
 
-            # Logging
-            if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
-                rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward) #TODO uncomment
-                rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_after.agent_vel, agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
+                # Logging
+                if (step % self.every_n_steps == 0 and self.episode_num % self.every_n_episodes == 0): # print step info
+                    rospy.loginfo("Episode: %d. Step: %d. LastActionMethod: %s. LastAction: %s. Reward: %f. CumReward: %f. NewState:", self.episode_num, step, self.RL_ALGO.action_chosing_method, executed_action, reward, episode_reward) #TODO uncomment
+            
+            else:        
+                reward = 0
+                rospy.loginfo("Reward FLAG, action NOT Executed")
+            
+            rospy.loginfo("\nAgent Velocity: %f, \nAgent Lane: %d, \nAmbulance Velocity: %f, \nAmbulance Lane: %d, \nRelative Position: %f\n", agent_state_after.agent_vel, agent_state_after.agent_lane, agent_state_after.amb_vel, agent_state_after.amb_lane, agent_state_after.rel_amb_y)
 
+
+            
 
             ############### Check if episode is done ###############
             if (self.is_episode_done): # DO NOT REMOVE THIS (IT BREAKS IF WE ARE DONE)
