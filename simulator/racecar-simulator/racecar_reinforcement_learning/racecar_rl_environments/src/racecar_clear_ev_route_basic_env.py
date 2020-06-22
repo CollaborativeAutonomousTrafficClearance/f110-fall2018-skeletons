@@ -733,7 +733,7 @@ class ClearEVRouteBasicEnv: # IMPORTANT NOTE #: this version currently only hand
             #debug#print(f'c: {c}, m: {m}, accel: {(self.emer.spd - amb_last_velocity)}')
             #rospy.loginfo("if condition = : %f", abs(amb_last_velocity-self.emer_max_speed))
             
-            if ( abs(amb_last_velocity-self.emer_max_speed) <= 0.01 ):
+            if (abs(amb_last_velocity-self.emer_max_speed) <= 0.01 ) and (abs(emer_curr_spd-self.emer_max_speed) <= 0.01):
             # since ambulance had maximum speed and speed did not change that much; unless we applied the code below.. the acceleration
             # will be wrongly assumed to be zero. Although the ambulance probably could have accelerated more, but this is its maximum velocity.
                 reward = self.max_step_reward/execution_time #same reward as maximum acceleration # divide by action execution time for normalization purposes
