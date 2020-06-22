@@ -4,13 +4,16 @@
     <arg name="r_name" default="racecar"/>
     <arg name="vesc_ns" default="/vesc"/>
 
-    <arg name="max_vel" default="0.5"/>
+    <arg name="max_vel" default="0.1"/>
     <arg name="max_acc" default="0.02"/> <!--was 0.1-->
 
     <arg name="use_comm_layer" default="false"/>
 
+
     <param name="max_vel" value="$(arg max_vel)"/>
     <param name="max_acc" value="$(arg max_acc)"/>
+
+    
 
 
     <!--The move base node-->
